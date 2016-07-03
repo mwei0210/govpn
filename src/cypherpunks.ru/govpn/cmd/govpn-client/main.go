@@ -161,7 +161,8 @@ MainCycle:
 			termination <- struct{}{}
 			break MainCycle
 		case <-timeouted:
-			break MainCycle
+			govpn.BothPrintf(`[sleep seconds="%d"]`, timeout)
+			time.Sleep(time.Second * time.Duration(timeout))
 		case <-rehandshaking:
 		}
 		close(timeouted)
