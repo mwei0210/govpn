@@ -78,6 +78,12 @@ func main() {
 		govpn.EGDInit(*egdPath)
 	}
 
+	if *proxyAddr != "" {
+		*proto = "tcp"
+	}
+	if !(*proto == "udp" || *proto == "tcp") {
+		log.Fatalln("Unknown protocol specified")
+	}
 	if *verifierRaw == "" {
 		log.Fatalln("No verifier specified")
 	}
@@ -139,9 +145,6 @@ MainCycle:
 		timeouted := make(chan struct{})
 		rehandshaking := make(chan struct{})
 		termination := make(chan struct{})
-		if *proxyAddr != "" {
-			*proto = "tcp"
-		}
 		switch *proto {
 		case "udp":
 			go startUDP(timeouted, rehandshaking, termination)
@@ -151,8 +154,6 @@ MainCycle:
 			} else {
 				go startTCP(timeouted, rehandshaking, termination)
 			}
-		default:
-			log.Fatalln("Unknown protocol specified")
 		}
 		select {
 		case <-termSignal:
