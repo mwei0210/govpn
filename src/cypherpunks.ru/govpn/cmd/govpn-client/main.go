@@ -45,6 +45,7 @@ var (
 	mtu         = flag.Int("mtu", govpn.MTUDefault, "MTU of TAP interface")
 	timeoutP    = flag.Int("timeout", 60, "Timeout seconds")
 	timeSync    = flag.Int("timesync", 0, "Time synchronization requirement")
+	noreconnect = flag.Bool("noreconnect", false, "Disable reconnection after timeout")
 	noisy       = flag.Bool("noise", false, "Enable noise appending")
 	encless     = flag.Bool("encless", false, "Encryptionless mode")
 	cpr         = flag.Int("cpr", 0, "Enable constant KiB/sec out traffic rate")
@@ -161,6 +162,9 @@ MainCycle:
 			termination <- struct{}{}
 			break MainCycle
 		case <-timeouted:
+			if *noreconnect {
+				break MainCycle
+			}
 			govpn.BothPrintf(`[sleep seconds="%d"]`, timeout)
 			time.Sleep(time.Second * time.Duration(timeout))
 		case <-rehandshaking:
