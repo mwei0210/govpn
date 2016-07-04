@@ -28,6 +28,7 @@ A copy of the license is included in the section entitled "Copying conditions".
 @menu
 * Frequently Asked Questions: FAQ.
 * News::
+* Modes of operation::
 * Информация на русском: Русский.
 * Installation::
 * Precautions::
@@ -41,6 +42,7 @@ A copy of the license is included in the section entitled "Copying conditions".
 
 @include faq.texi
 @include news.texi
+@include modes.texi
 @include russian.texi
 @include installation.texi
 @include precautions.texi
