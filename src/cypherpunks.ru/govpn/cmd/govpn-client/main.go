@@ -45,6 +45,7 @@ var (
 	mtu         = flag.Int("mtu", govpn.MTUDefault, "MTU of TAP interface")
 	timeoutP    = flag.Int("timeout", 60, "Timeout seconds")
 	timeSync    = flag.Int("timesync", 0, "Time synchronization requirement")
+	noreconnect = flag.Bool("noreconnect", false, "Disable reconnection after timeout")
 	noisy       = flag.Bool("noise", false, "Enable noise appending")
 	encless     = flag.Bool("encless", false, "Encryptionless mode")
 	cpr         = flag.Int("cpr", 0, "Enable constant KiB/sec out traffic rate")
@@ -78,6 +79,12 @@ func main() {
 		govpn.EGDInit(*egdPath)
 	}
 
+	if *proxyAddr != "" {
+		*proto = "tcp"
+	}
+	if !(*proto == "udp" || *proto == "tcp") {
+		log.Fatalln("Unknown protocol specified")
+	}
 	if *verifierRaw == "" {
 		log.Fatalln("No verifier specified")
 	}
@@ -139,9 +146,6 @@ MainCycle:
 		timeouted := make(chan struct{})
 		rehandshaking := make(chan struct{})
 		termination := make(chan struct{})
-		if *proxyAddr != "" {
-			*proto = "tcp"
-		}
 		switch *proto {
 		case "udp":
 			go startUDP(timeouted, rehandshaking, termination)
@@ -151,8 +155,6 @@ MainCycle:
 			} else {
 				go startTCP(timeouted, rehandshaking, termination)
 			}
-		default:
-			log.Fatalln("Unknown protocol specified")
 		}
 		select {
 		case <-termSignal:
@@ -160,7 +162,11 @@ MainCycle:
 			termination <- struct{}{}
 			break MainCycle
 		case <-timeouted:
-			break MainCycle
+			if *noreconnect {
+				break MainCycle
+			}
+			govpn.BothPrintf(`[sleep seconds="%d"]`, timeout)
+			time.Sleep(time.Second * time.Duration(timeout))
 		case <-rehandshaking:
 		}
 		close(timeouted)

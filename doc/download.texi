@@ -1,10 +1,15 @@
 @node Tarballs
 @section Prepared tarballs
 
-You can obtain releases source code prepared tarballs from the links below:
+You can obtain releases source code prepared tarballs from the links below
+(or use @url{https://sourceforge.net/projects/govpn/files/, Sourceforge mirror}):
 
 @multitable {XXXXX} {XXXX KiB} {link sign} {xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx}
 @headitem Version @tab Size @tab Tarball @tab SHA256 checksum
+
+@item @ref{Release 5.8, 5.8} @tab 312 KiB
+@tab @url{download/govpn-5.8.tar.xz, link} @url{download/govpn-5.8.tar.xz.sig, sign}
+@tab @code{a730dc3bbb97bc412a80f529b0f3043e70d011387f5d579cbd2e29964ddf94f4}
 
 @item @ref{Release 5.7, 5.7} @tab 312 KiB
 @tab @url{download/govpn-5.7.tar.xz, link} @url{download/govpn-5.7.tar.xz.sig, sign}
