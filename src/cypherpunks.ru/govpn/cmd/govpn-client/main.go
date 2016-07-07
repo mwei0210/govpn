@@ -51,6 +51,7 @@ var (
 	cpr         = flag.Int("cpr", 0, "Enable constant KiB/sec out traffic rate")
 	egdPath     = flag.String("egd", "", "Optional path to EGD socket")
 	syslog      = flag.Bool("syslog", false, "Enable logging to syslog")
+	version     = flag.Bool("version", false, "Print version information")
 	warranty    = flag.Bool("warranty", false, "Print warranty information")
 
 	conf        *govpn.PeerConf
@@ -65,6 +66,10 @@ func main() {
 	flag.Parse()
 	if *warranty {
 		fmt.Println(govpn.Warranty)
+		return
+	}
+	if *version {
+		fmt.Println(govpn.VersionGet())
 		return
 	}
 	timeout = *timeoutP

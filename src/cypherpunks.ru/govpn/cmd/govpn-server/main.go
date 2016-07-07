@@ -39,6 +39,7 @@ var (
 	proxy    = flag.String("proxy", "", "Enable HTTP proxy on host:port")
 	egdPath  = flag.String("egd", "", "Optional path to EGD socket")
 	syslog   = flag.Bool("syslog", false, "Enable logging to syslog")
+	version  = flag.Bool("version", false, "Print version information")
 	warranty = flag.Bool("warranty", false, "Print warranty information")
 )
 
@@ -46,6 +47,10 @@ func main() {
 	flag.Parse()
 	if *warranty {
 		fmt.Println(govpn.Warranty)
+		return
+	}
+	if *version {
+		fmt.Println(govpn.VersionGet())
 		return
 	}
 	timeout := time.Second * time.Duration(govpn.TimeoutDefault)
