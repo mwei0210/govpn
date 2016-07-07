@@ -36,6 +36,7 @@ var (
 	tOpt     = flag.Int("t", govpn.DefaultT, "Argon2d iteration parameter")
 	pOpt     = flag.Int("p", govpn.DefaultP, "Argon2d parallelizm parameter")
 	egdPath  = flag.String("egd", "", "Optional path to EGD socket")
+	version  = flag.Bool("version", false, "Print version information")
 	warranty = flag.Bool("warranty", false, "Print warranty information")
 )
 
@@ -43,6 +44,10 @@ func main() {
 	flag.Parse()
 	if *warranty {
 		fmt.Println(govpn.Warranty)
+		return
+	}
+	if *version {
+		fmt.Println(govpn.VersionGet())
 		return
 	}
 	if *egdPath != "" {

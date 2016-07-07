@@ -1,6 +1,12 @@
 @node Новости
 @section Новости
 
+@node Релиз 5.10
+@subsection Релиз 5.10
+@itemize
+@item Добавлена @option{-version} опция, выводящая версию программы.
+@end itemize
+
 @node Релиз 5.9
 @subsection Релиз 5.9
 @itemize

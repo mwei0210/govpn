@@ -3,6 +3,12 @@
 
 See also this page @ref{Новости, on russian}.
 
+@node Release 5.10
+@section Release 5.10
+@itemize
+@item @option{-version} option added, printing program version.
+@end itemize
+
 @node Release 5.9
 @section Release 5.9
 @itemize
