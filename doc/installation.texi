@@ -36,8 +36,8 @@ Get @ref{Tarballs, the tarball}, check its
 binaries will be built in the current directory:
 
 @verbatim
-% wget http://www.cypherpunks.ru/govpn/download/govpn-2.3.tar.xz
-% wget http://www.cypherpunks.ru/govpn/download/govpn-2.3.tar.xz.sig
+% wget http://www.govpn.info/download/govpn-2.3.tar.xz
+% wget http://www.govpn.info/download/govpn-2.3.tar.xz.sig
 % gpg --verify govpn-2.3.tar.xz.sig govpn-2.3.tar.xz
 % tar xf govpn-2.3.tar.xz
 % make -C govpn-2.3 all
