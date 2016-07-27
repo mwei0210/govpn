@@ -4,8 +4,9 @@
 Possibly GoVPN already exists in your distribution:
 
 @itemize
-@item @url{https://aur.archlinux.org/packages/govpn/, AUR}
+@item @url{https://aur.archlinux.org/packages/govpn/, Arch Linux AUR}
 @item @url{http://www.freshports.org/security/govpn/, FreeBSD ports}
+@item @url{https://pkgs.org/download/govpn, openSUSE OSS}
 @end itemize
 
 GoVPN is written on @url{https://golang.org/, Go} programming language
