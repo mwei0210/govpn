@@ -1,7 +1,5 @@
 #!/bin/sh -ex
 
-[ -n "$SHA256" ] || SHA256=sha256
-
 cur=$(pwd)
 tmp=$(mktemp -d)
 release=$1
@@ -60,7 +58,7 @@ mv $tmp/govpn-"$release".tar.xz $tmp/govpn-"$release".tar.xz.sig $cur/doc/govpn.
 
 tarball=$cur/doc/govpn.html/download/govpn-"$release".tar.xz
 size=$(( $(cat $tarball | wc -c) / 1024 ))
-hash=$($SHA256 $tarball | sed 's/^.*\([0-9a-f]\{64\}\).*$/\1/')
+hash=$(gpg --print-md SHA256 < $tarball)
 cat <<EOF
 An entry for documentation:
 @item @ref{Release $release, $release} @tab $size KiB
