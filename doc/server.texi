@@ -26,7 +26,7 @@ Configuration file is YAML file with following example structure:
 @verbatim
 stargrave:                          <-- Peer human readable name
     iface: tap10                    <-- OPTIONAL TAP interface name
-    mtu: 1514                       <-- OPTIONAL overriden MTU
+    mtu: 1515                       <-- OPTIONAL overriden MTU
     up: ./stargrave-up.sh           <-- OPTIONAL up-script
     down: ./stargrave-down.sh       <-- OPTIONAL down-script
     timeout: 60                     <-- OPTIONAL overriden timeout

@@ -7,5 +7,5 @@ sizes (including the padding byte) will be ignored. If either
 @ref{Noise, noise}, @ref{Encless, encryptionless mode} or @ref{CPR} are
 enabled, then all outgoing packets are filled up to that MTU value.
 
-Default MTU equals to 1514 bytes (1500 bytes of Ethernet payload, 14
+Default MTU equals to 1515 bytes (1500 bytes of Ethernet payload, 15
 bytes of Ethernet header).
