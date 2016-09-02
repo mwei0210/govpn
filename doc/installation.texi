@@ -6,6 +6,7 @@ Possibly GoVPN already exists in your distribution:
 @itemize
 @item @url{https://aur.archlinux.org/packages/govpn/, Arch Linux AUR}
 @item @url{http://www.freshports.org/security/govpn/, FreeBSD ports}
+@item @url{https://gpo.zugaina.org/net-misc/govpn, Gentoo Portage Overlay}
 @item @url{https://pkgs.org/download/govpn, openSUSE OSS}
 @end itemize
 
