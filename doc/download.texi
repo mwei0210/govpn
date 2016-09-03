@@ -2,7 +2,8 @@
 @section Prepared tarballs
 
 You can obtain releases source code prepared tarballs from the links below
-(or use @url{https://sourceforge.net/projects/govpn/files/, Sourceforge mirror}):
+(or use @url{https://sourceforge.net/projects/govpn/files/, Sourceforge mirror}).
+Do not forget to check tarball @ref{Integrity, integrity}.
 
 @multitable {XXXXX} {XXXX KiB} {link sign} {xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx}
 @headitem Version @tab Size @tab Tarball @tab SHA256 checksum

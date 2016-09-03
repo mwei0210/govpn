@@ -45,6 +45,7 @@ You can obtain releases source code prepared tarballs on
 @url{http://www.govpn.info/}.
 EOF
 make -C doc
+rm -r doc/.well-known doc/govpn.html/.well-known
 
 rm utils/makedist.sh
 find . -name .git -type d | xargs rm -fr
@@ -104,7 +105,7 @@ Source code and its signature for that version can be found here:
     http://www.govpn.info/download/govpn-${release}.tar.xz.sig
 
 SHA256 hash: $hash
-GPG key ID: 0xF2F59045FFE2F4A1 GoVPN release signing key
+GPG key ID: 0xF2F59045FFE2F4A1 GoVPN releases <releases@govpn.info>
 Fingerprint: D269 9B73 3C41 2068 D8DA  656E F2F5 9045 FFE2 F4A1
 
 Please send questions regarding the use of GoVPN, bug reports and patches
@@ -151,7 +152,7 @@ $(git cat-file -p $release | sed -n '6,/^.*BEGIN/p' | sed '$d')
     http://www.govpn.info/download/govpn-${release}.tar.xz.sig
 
 SHA256 хэш: $hash
-Идентификатор GPG ключа: 0xF2F59045FFE2F4A1 GoVPN release signing key
+Идентификатор GPG ключа: 0xF2F59045FFE2F4A1 GoVPN releases <releases@govpn.info>
 Отпечаток: D269 9B73 3C41 2068 D8DA  656E F2F5 9045 FFE2 F4A1
 
 Пожалуйста все вопросы касающиеся использования GoVPN, отчёты об ошибках

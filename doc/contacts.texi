@@ -5,6 +5,7 @@ Please send questions regarding the use of GoVPN, bug reports and patches to
 @url{https://lists.cypherpunks.ru/pipermail/govpn-devel/, govpn-devel}
 mailing list. Announcements also go to this mailing list.
 
-Official website is @url{http://www.govpn.info/}, also available as
+Official website is @url{http://www.govpn.info/}, also available via
+@url{https://www.govpn.info/, HTTPS} and as
 @url{https://www.torproject.org/, Tor} hidden service:
 @url{http://2wir2p7ibeu72jk3.onion/}.
