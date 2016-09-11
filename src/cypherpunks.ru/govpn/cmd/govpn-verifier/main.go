@@ -32,9 +32,9 @@ import (
 var (
 	keyPath  = flag.String("key", "", "Path to passphrase file")
 	verifier = flag.String("verifier", "", "Optional verifier")
-	mOpt     = flag.Int("m", govpn.DefaultM, "Argon2d memory parameter (KiBs)")
-	tOpt     = flag.Int("t", govpn.DefaultT, "Argon2d iteration parameter")
-	pOpt     = flag.Int("p", govpn.DefaultP, "Argon2d parallelizm parameter")
+	sOpt     = flag.Int("s", govpn.DefaultS, "Balloon space cost")
+	tOpt     = flag.Int("t", govpn.DefaultT, "Balloon time cost")
+	pOpt     = flag.Int("p", govpn.DefaultP, "Balloon parallel jobs")
 	egdPath  = flag.String("egd", "", "Optional path to EGD socket")
 	version  = flag.Bool("version", false, "Print version information")
 	warranty = flag.Bool("warranty", false, "Print warranty information")
@@ -63,7 +63,7 @@ func main() {
 			log.Fatalln(err)
 		}
 		pid := govpn.PeerId(*id)
-		v := govpn.VerifierNew(*mOpt, *tOpt, *pOpt, &pid)
+		v := govpn.VerifierNew(*sOpt, *tOpt, *pOpt, &pid)
 		v.PasswordApply(key)
 		fmt.Println(v.LongForm())
 		fmt.Println(v.ShortForm())

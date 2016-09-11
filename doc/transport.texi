@@ -25,8 +25,9 @@ MAC_KEY = 256bit(ENCRYPT(KEY, 0))
 Salsa20's output is ignored and only remaining is XORed with ther data,
 encrypting it.
 
-@code{DATA} is padded with @code{PAD} (0x80 byte). Optional @code{ZEROS}
-may follow, to fill up packet to conceal payload packet length.
+@code{DATA} is padded using ISO/IEC 7816-4 format (@code{PAD} (0x80
+byte) with optional @code{ZEROS} following), to fill up packet to
+conceal payload packet length.
 
 @code{AUTH} is Poly1305 authentication function. First 256 bits of
 Salsa20's output are used as a one-time key for @code{AUTH}.

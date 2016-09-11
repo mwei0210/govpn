@@ -1,7 +1,5 @@
 #!/bin/sh -ex
 
-[ -n "$SHA256" ] || SHA256=sha256
-
 cur=$(pwd)
 tmp=$(mktemp -d)
 release=$1
@@ -13,7 +11,6 @@ repos="
     src/github.com/bigeagle/water
     src/github.com/dchest/blake2b
     src/github.com/go-yaml/yaml
-    src/github.com/magical/argon2
     src/golang.org/x/crypto
 "
 for repo in $repos; do
@@ -44,9 +41,10 @@ cat > doc/download.texi <<EOF
 @node Tarballs
 @section Prepared tarballs
 You can obtain releases source code prepared tarballs on
-@url{http://www.cypherpunks.ru/govpn/}.
+@url{http://www.govpn.info/}.
 EOF
 make -C doc
+rm -r doc/.well-known doc/govpn.html/.well-known
 
 rm utils/makedist.sh
 find . -name .git -type d | xargs rm -fr
@@ -60,7 +58,7 @@ mv $tmp/govpn-"$release".tar.xz $tmp/govpn-"$release".tar.xz.sig $cur/doc/govpn.
 
 tarball=$cur/doc/govpn.html/download/govpn-"$release".tar.xz
 size=$(( $(cat $tarball | wc -c) / 1024 ))
-hash=$($SHA256 $tarball | sed 's/^.*\([0-9a-f]\{64\}\).*$/\1/')
+hash=$(gpg --print-md SHA256 < $tarball)
 cat <<EOF
 An entry for documentation:
 @item @ref{Release $release, $release} @tab $size KiB
@@ -97,16 +95,16 @@ $(git cat-file -p $release | sed -n '6,/^.*BEGIN/p' | sed '$d')
 
 ----------------8<-----------------8<-----------------8<----------------
 
-GoVPN's home page is: http://www.cypherpunks.ru/govpn/ (http://govpn.info/)
-also available as Tor hidden service: http://vabu56j2ep2rwv3b.onion/govpn/
+GoVPN's home page is: http://www.govpn.info/
+also available as Tor hidden service: http://2wir2p7ibeu72jk3.onion/
 
 Source code and its signature for that version can be found here:
 
-    http://www.cypherpunks.ru/govpn/download/govpn-${release}.tar.xz ($size KiB)
-    http://www.cypherpunks.ru/govpn/download/govpn-${release}.tar.xz.sig
+    http://www.govpn.info/download/govpn-${release}.tar.xz ($size KiB)
+    http://www.govpn.info/download/govpn-${release}.tar.xz.sig
 
 SHA256 hash: $hash
-GPG key ID: 0xF2F59045FFE2F4A1 GoVPN release signing key
+GPG key ID: 0xF2F59045FFE2F4A1 GoVPN releases <releases@govpn.info>
 Fingerprint: D269 9B73 3C41 2068 D8DA  656E F2F5 9045 FFE2 F4A1
 
 Please send questions regarding the use of GoVPN, bug reports and patches
@@ -143,17 +141,17 @@ $(git cat-file -p $release | sed -n '6,/^.*BEGIN/p' | sed '$d')
 
 ----------------8<-----------------8<-----------------8<----------------
 
-Домашняя страница GoVPN: http://www.cypherpunks.ru/govpn/ (http://govpn.info/)
-также доступна как скрытый сервис Tor: http://vabu56j2ep2rwv3b.onion/govpn/
-Коротко о демоне: http://www.cypherpunks.ru/govpn/O-demone.html
+Домашняя страница GoVPN: http://www.govpn.info/
+также доступна как скрытый сервис Tor: http://2wir2p7ibeu72jk3.onion/
+Коротко о демоне: http://www.govpn.info/O-demone.html
 
 Исходный код и его подпись для этой версии находится здесь:
 
-    http://www.cypherpunks.ru/govpn/download/govpn-${release}.tar.xz ($size KiB)
-    http://www.cypherpunks.ru/govpn/download/govpn-${release}.tar.xz.sig
+    http://www.govpn.info/download/govpn-${release}.tar.xz ($size KiB)
+    http://www.govpn.info/download/govpn-${release}.tar.xz.sig
 
 SHA256 хэш: $hash
-Идентификатор GPG ключа: 0xF2F59045FFE2F4A1 GoVPN release signing key
+Идентификатор GPG ключа: 0xF2F59045FFE2F4A1 GoVPN releases <releases@govpn.info>
 Отпечаток: D269 9B73 3C41 2068 D8DA  656E F2F5 9045 FFE2 F4A1
 
 Пожалуйста все вопросы касающиеся использования GoVPN, отчёты об ошибках

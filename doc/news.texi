@@ -3,6 +3,17 @@
 
 See also this page @ref{Новости, on russian}.
 
+@node Release 6.0
+@section Release 6.0
+@itemize
+@item Argon2d is replaced with Balloon hashing. Found Argon2 libraries
+written on pure Go have various problems. Moreover Argon2i should be
+used instead, but it has some possible
+@url{http://eprint.iacr.org/2016/027, cryptographic defects}. So it is
+replaced with much more simpler (and seems even cryptographically
+better) @url{https://crypto.stanford.edu/balloon/, Balloon hashing}.
+@end itemize
+
 @node Release 5.10
 @section Release 5.10
 @itemize
