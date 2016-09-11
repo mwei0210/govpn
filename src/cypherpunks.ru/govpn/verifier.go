@@ -28,19 +28,20 @@ import (
 	"os"
 	"strings"
 
+	"cypherpunks.ru/balloon"
 	"github.com/agl/ed25519"
-	"github.com/magical/argon2"
+	"github.com/dchest/blake2b"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
 const (
-	DefaultM = 1 << 12
-	DefaultT = 1 << 7
-	DefaultP = 1
+	DefaultS = 1 << 20 / 32
+	DefaultT = 1 << 4
+	DefaultP = 2
 )
 
 type Verifier struct {
-	M   int
+	S   int
 	T   int
 	P   int
 	Id  *PeerId
@@ -49,17 +50,14 @@ type Verifier struct {
 
 // Generate new verifier for given peer, with specified password and
 // hashing parameters.
-func VerifierNew(m, t, p int, id *PeerId) *Verifier {
-	return &Verifier{M: m, T: t, P: p, Id: id}
+func VerifierNew(s, t, p int, id *PeerId) *Verifier {
+	return &Verifier{S: s, T: t, P: p, Id: id}
 }
 
 // Apply the password: create Ed25519 keypair based on it, save public
 // key in verifier.
 func (v *Verifier) PasswordApply(password string) *[ed25519.PrivateKeySize]byte {
-	r, err := argon2.Key([]byte(password), v.Id[:], v.T, v.P, int64(v.M), 32)
-	if err != nil {
-		log.Fatalln("Unable to apply Argon2d", err)
-	}
+	r := balloon.H(blake2b.New256, []byte(password), v.Id[:], v.S, v.T, v.P)
 	defer SliceZero(r)
 	src := bytes.NewBuffer(r)
 	pub, prv, err := ed25519.GenerateKey(src)
@@ -72,26 +70,26 @@ func (v *Verifier) PasswordApply(password string) *[ed25519.PrivateKeySize]byte 
 
 // Parse either short or long verifier form.
 func VerifierFromString(input string) (*Verifier, error) {
-	s := strings.Split(input, "$")
-	if len(s) < 4 || s[1] != "argon2d" {
+	ss := strings.Split(input, "$")
+	if len(ss) < 4 || ss[1] != "balloon" {
 		return nil, errors.New("Invalid verifier structure")
 	}
-	var m, t, p int
-	n, err := fmt.Sscanf(s[2], "m=%d,t=%d,p=%d", &m, &t, &p)
+	var s, t, p int
+	n, err := fmt.Sscanf(ss[2], "s=%d,t=%d,p=%d", &s, &t, &p)
 	if n != 3 || err != nil {
 		return nil, errors.New("Invalid verifier parameters")
 	}
-	salt, err := base64.RawStdEncoding.DecodeString(s[3])
+	salt, err := base64.RawStdEncoding.DecodeString(ss[3])
 	if err != nil {
 		return nil, err
 	}
-	v := Verifier{M: m, T: t, P: p}
+	v := Verifier{S: s, T: t, P: p}
 	id := new([IDSize]byte)
 	copy(id[:], salt)
 	pid := PeerId(*id)
 	v.Id = &pid
-	if len(s) == 5 {
-		pub, err := base64.RawStdEncoding.DecodeString(s[4])
+	if len(ss) == 5 {
+		pub, err := base64.RawStdEncoding.DecodeString(ss[4])
 		if err != nil {
 			return nil, err
 		}
@@ -105,8 +103,8 @@ func VerifierFromString(input string) (*Verifier, error) {
 // Does not include public key.
 func (v *Verifier) ShortForm() string {
 	return fmt.Sprintf(
-		"$argon2d$m=%d,t=%d,p=%d$%s",
-		v.M, v.T, v.P, base64.RawStdEncoding.EncodeToString(v.Id[:]),
+		"$balloon$s=%d,t=%d,p=%d$%s",
+		v.S, v.T, v.P, base64.RawStdEncoding.EncodeToString(v.Id[:]),
 	)
 }
 

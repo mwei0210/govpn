@@ -16,7 +16,8 @@ Pay attention how to get @ref{Sources, development source code}.
 @item DH elliptic-curve point encoding for public keys
     @url{http://elligator.cr.yp.to/, Elligator}.
 @item Verifier password hashing algorithm
-    @url{https://password-hashing.net/#argon2, Argon2d}.
+    @url{https://crypto.stanford.edu/balloon/, Balloon hashing} based
+    on BLAKE2b-256.
 @item Encryptionless confidentiality preserving encoding
     @url{http://people.csail.mit.edu/rivest/chaffing-980701.txt,
     Chaffing-and-Winnowing} (two Poly1305 MACs for each bit of message)
