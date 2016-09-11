@@ -7,6 +7,7 @@ release=$1
 
 git clone . $tmp/govpn-$release
 repos="
+    src/cypherpunks.ru/balloon
     src/github.com/agl/ed25519
     src/github.com/bigeagle/water
     src/github.com/dchest/blake2b
