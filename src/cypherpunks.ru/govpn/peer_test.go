@@ -113,7 +113,6 @@ func TestTransportSymmetricEncless(t *testing.T) {
 }
 
 func BenchmarkEnc(b *testing.B) {
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testPeer.EthProcess(testPt)
 	}
