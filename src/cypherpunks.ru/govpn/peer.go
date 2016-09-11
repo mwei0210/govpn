@@ -202,13 +202,13 @@ func newPeer(isClient bool, addr string, conn io.Writer, conf *PeerConf, key *[S
 	}
 
 	if isClient {
-		peer.noncesT = newNonces(peer.key, 1 + 2)
-		peer.noncesR = newNonces(peer.key, 0 + 2)
-		peer.noncesExpect = newNonces(peer.key, 0 + 2)
+		peer.noncesT = newNonces(peer.key, 1+2)
+		peer.noncesR = newNonces(peer.key, 0+2)
+		peer.noncesExpect = newNonces(peer.key, 0+2)
 	} else {
-		peer.noncesT = newNonces(peer.key, 0 + 2)
-		peer.noncesR = newNonces(peer.key, 1 + 2)
-		peer.noncesExpect = newNonces(peer.key, 1 + 2)
+		peer.noncesT = newNonces(peer.key, 0+2)
+		peer.noncesR = newNonces(peer.key, 1+2)
+		peer.noncesExpect = newNonces(peer.key, 1+2)
 	}
 
 	peer.NonceExpect = make([]byte, NonceSize)
