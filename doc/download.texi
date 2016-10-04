@@ -5,7 +5,7 @@ You can obtain releases source code prepared tarballs from the links below
 (or use @url{https://sourceforge.net/projects/govpn/files/, Sourceforge mirror}).
 Do not forget to check tarball @ref{Integrity, integrity}.
 
-@multitable {XXXXX} {XXXX KiB} {link sign} {xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx}
+@multitable {XXXXX} {XXXX KiB} {link sign} {xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx}
 @headitem Version @tab Size @tab Tarball @tab SHA256 checksum
 
 @item @ref{Release 6.0, 6.0} @tab 310 KiB
