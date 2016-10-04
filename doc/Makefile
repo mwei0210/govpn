@@ -14,5 +14,6 @@ govpn.html: *.texi handshake.utxt
 		--css-include=style.css \
 		--set-customization-variable SHOW_TITLE=0 \
 		--set-customization-variable DATE_IN_HEADER=1 \
+		--set-customization-variable TOP_NODE_UP_URL=index.html \
 		-o govpn.html index.texi
 	cp -r .well-known govpn.html/
