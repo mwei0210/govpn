@@ -8,11 +8,14 @@ handshake.utxt: handshake.txt
 govpn.info: *.texi handshake.utxt
 	$(MAKEINFO) -o govpn.info index.texi
 
+CSS != cat style.css
+
 govpn.html: *.texi handshake.utxt
 	rm -f govpn.html/*.html
 	$(MAKEINFO) --html \
-		--css-include=style.css \
+		--set-customization-variable CSS_LINES='$(CSS)' \
 		--set-customization-variable SHOW_TITLE=0 \
+		--set-customization-variable USE_ACCESSKEY=0 \
 		--set-customization-variable DATE_IN_HEADER=1 \
 		--set-customization-variable TOP_NODE_UP_URL=index.html \
 		-o govpn.html index.texi
