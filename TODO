@@ -1,3 +1,4 @@
+* Support TUN interfaces additionally to TAP ones
 * When govpn-server opens TAP files, then it won't release them until
   daemon itself is exited
 * Randomize ports usage
