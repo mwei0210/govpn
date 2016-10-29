@@ -25,11 +25,11 @@ import (
 	"log"
 	"time"
 
+	"chacha20"
 	"github.com/agl/ed25519"
 	"github.com/agl/ed25519/extra25519"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/curve25519"
-	"golang.org/x/crypto/salsa20"
 )
 
 const (
@@ -44,7 +44,7 @@ type Handshake struct {
 	Conf     *PeerConf
 	dsaPubH  *[ed25519.PublicKeySize]byte
 	key      *[32]byte
-	rNonce   *[RSize]byte
+	rNonce   *[16]byte
 	dhPriv   *[32]byte    // own private DH key
 	rServer  *[RSize]byte // random string for authentication
 	rClient  *[RSize]byte
@@ -88,10 +88,10 @@ func (h *Handshake) Zero() {
 	}
 }
 
-func (h *Handshake) rNonceNext(count uint64) []byte {
-	nonce := make([]byte, RSize)
-	nonceCurrent, _ := binary.Uvarint(h.rNonce[:])
-	binary.PutUvarint(nonce, nonceCurrent+count)
+func (h *Handshake) rNonceNext(count uint64) *[16]byte {
+	nonce := new([16]byte)
+	nonceCurrent, _ := binary.Uvarint(h.rNonce[8:])
+	binary.PutUvarint(nonce[8:], nonceCurrent+count)
 	return nonce
 }
 
@@ -153,8 +153,8 @@ func HandshakeStart(addr string, conn io.Writer, conf *PeerConf) *Handshake {
 	var dhPubRepr *[32]byte
 	state.dhPriv, dhPubRepr = dhKeypairGen()
 
-	state.rNonce = new([RSize]byte)
-	if _, err := io.ReadFull(Rand, state.rNonce[:]); err != nil {
+	state.rNonce = new([16]byte)
+	if _, err := io.ReadFull(Rand, state.rNonce[8:]); err != nil {
 		log.Fatalln("Error reading random for nonce:", err)
 	}
 	var enc []byte
@@ -166,15 +166,15 @@ func HandshakeStart(addr string, conn io.Writer, conf *PeerConf) *Handshake {
 	copy(enc, dhPubRepr[:])
 	if conf.Encless {
 		var err error
-		enc, err = EnclessEncode(state.dsaPubH, state.rNonce[:], enc)
+		enc, err = EnclessEncode(state.dsaPubH, state.rNonce, enc)
 		if err != err {
 			panic(err)
 		}
 	} else {
-		salsa20.XORKeyStream(enc, enc, state.rNonce[:], state.dsaPubH)
+		chacha20.XORKeyStream(enc, enc, state.rNonce, state.dsaPubH)
 	}
-	data := append(state.rNonce[:], enc...)
-	data = append(data, idTag(state.Conf.Id, state.Conf.TimeSync, state.rNonce[:])...)
+	data := append(state.rNonce[8:], enc...)
+	data = append(data, idTag(state.Conf.Id, state.Conf.TimeSync, state.rNonce[8:])...)
 	state.conn.Write(data)
 	return state
 }
@@ -188,15 +188,15 @@ func (h *Handshake) Server(data []byte) *Peer {
 	// R + ENC(H(DSAPub), R, El(CDHPub)) + IDtag
 	if h.rNonce == nil && ((!h.Conf.Encless && len(data) >= 48) ||
 		(h.Conf.Encless && len(data) == EnclessEnlargeSize+h.Conf.MTU)) {
-		h.rNonce = new([RSize]byte)
-		copy(h.rNonce[:], data[:RSize])
+		h.rNonce = new([16]byte)
+		copy(h.rNonce[8:], data[:RSize])
 
 		// Decrypt remote public key
 		cDHRepr := new([32]byte)
 		if h.Conf.Encless {
 			out, err := EnclessDecode(
 				h.dsaPubH,
-				h.rNonce[:],
+				h.rNonce,
 				data[RSize:len(data)-8],
 			)
 			if err != nil {
@@ -205,7 +205,7 @@ func (h *Handshake) Server(data []byte) *Peer {
 			}
 			copy(cDHRepr[:], out)
 		} else {
-			salsa20.XORKeyStream(cDHRepr[:], data[RSize:RSize+32], h.rNonce[:], h.dsaPubH)
+			chacha20.XORKeyStream(cDHRepr[:], data[RSize:RSize+32], h.rNonce, h.dsaPubH)
 		}
 
 		// Generate DH keypair
@@ -228,7 +228,7 @@ func (h *Handshake) Server(data []byte) *Peer {
 			}
 		} else {
 			encPub = make([]byte, 32)
-			salsa20.XORKeyStream(encPub, dhPubRepr[:], h.rNonceNext(1), h.dsaPubH)
+			chacha20.XORKeyStream(encPub, dhPubRepr[:], h.rNonceNext(1), h.dsaPubH)
 		}
 
 		// Generate R* and encrypt them
@@ -250,12 +250,12 @@ func (h *Handshake) Server(data []byte) *Peer {
 		}
 		copy(encRs, append(h.rServer[:], h.sServer[:]...))
 		if h.Conf.Encless {
-			encRs, err = EnclessEncode(h.key, h.rNonce[:], encRs)
+			encRs, err = EnclessEncode(h.key, h.rNonce, encRs)
 			if err != nil {
 				panic(err)
 			}
 		} else {
-			salsa20.XORKeyStream(encRs, encRs, h.rNonce[:], h.key)
+			chacha20.XORKeyStream(encRs, encRs, h.rNonce, h.key)
 		}
 
 		// Send that to client
@@ -282,7 +282,7 @@ func (h *Handshake) Server(data []byte) *Peer {
 			dec = dec[:RSize+RSize+SSize+ed25519.SignatureSize]
 		} else {
 			dec = make([]byte, RSize+RSize+SSize+ed25519.SignatureSize)
-			salsa20.XORKeyStream(
+			chacha20.XORKeyStream(
 				dec,
 				data[:RSize+RSize+SSize+ed25519.SignatureSize],
 				h.rNonceNext(1),
@@ -314,7 +314,7 @@ func (h *Handshake) Server(data []byte) *Peer {
 				panic(err)
 			}
 		} else {
-			salsa20.XORKeyStream(enc, enc, h.rNonceNext(2), h.key)
+			chacha20.XORKeyStream(enc, enc, h.rNonceNext(2), h.key)
 		}
 		h.conn.Write(append(enc, idTag(h.Conf.Id, h.Conf.TimeSync, enc)...))
 
@@ -359,7 +359,7 @@ func (h *Handshake) Client(data []byte) *Peer {
 			}
 			copy(sDHRepr[:], tmp[:32])
 		} else {
-			salsa20.XORKeyStream(sDHRepr[:], data[:32], h.rNonceNext(1), h.dsaPubH)
+			chacha20.XORKeyStream(sDHRepr[:], data[:32], h.rNonceNext(1), h.dsaPubH)
 		}
 
 		// Compute shared key
@@ -371,11 +371,7 @@ func (h *Handshake) Client(data []byte) *Peer {
 		h.rServer = new([RSize]byte)
 		h.sServer = new([SSize]byte)
 		if h.Conf.Encless {
-			tmp, err = EnclessDecode(
-				h.key,
-				h.rNonce[:],
-				data[len(data)/2:len(data)-8],
-			)
+			tmp, err = EnclessDecode(h.key, h.rNonce, data[len(data)/2:len(data)-8])
 			if err != nil {
 				log.Println("Unable to decode packet from", h.addr, err)
 				return nil
@@ -384,7 +380,7 @@ func (h *Handshake) Client(data []byte) *Peer {
 			copy(h.sServer[:], tmp[RSize:RSize+SSize])
 		} else {
 			decRs := make([]byte, RSize+SSize)
-			salsa20.XORKeyStream(decRs, data[SSize:SSize+RSize+SSize], h.rNonce[:], h.key)
+			chacha20.XORKeyStream(decRs, data[SSize:SSize+RSize+SSize], h.rNonce, h.key)
 			copy(h.rServer[:], decRs[:RSize])
 			copy(h.sServer[:], decRs[RSize:])
 		}
@@ -416,7 +412,7 @@ func (h *Handshake) Client(data []byte) *Peer {
 				panic(err)
 			}
 		} else {
-			salsa20.XORKeyStream(enc, enc, h.rNonceNext(1), h.key)
+			chacha20.XORKeyStream(enc, enc, h.rNonceNext(1), h.key)
 		}
 
 		// Send that to server
@@ -438,7 +434,7 @@ func (h *Handshake) Client(data []byte) *Peer {
 			dec = dec[:RSize]
 		} else {
 			dec = make([]byte, RSize)
-			salsa20.XORKeyStream(dec, data[:RSize], h.rNonceNext(2), h.key)
+			chacha20.XORKeyStream(dec, data[:RSize], h.rNonceNext(2), h.key)
 		}
 		if subtle.ConstantTimeCompare(dec, h.rClient[:]) != 1 {
 			log.Println("Invalid client's random number with", h.addr)

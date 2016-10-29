@@ -28,16 +28,16 @@ import (
 	"sync/atomic"
 	"time"
 
+	"chacha20"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/poly1305"
-	"golang.org/x/crypto/salsa20"
 )
 
 const (
 	NonceSize       = 8
 	NonceBucketSize = 256
 	TagSize         = poly1305.TagSize
-	// S20BS is Salsa20's internal blocksize in bytes
+	// S20BS is ChaCha20's internal blocksize in bytes
 	S20BS = 64
 	// Maximal amount of bytes transfered with single key (4 GiB)
 	MaxBytesPerKey uint64 = 1 << 32
@@ -51,7 +51,7 @@ const (
 
 func newNonces(key *[32]byte, i uint64) chan *[NonceSize]byte {
 	macKey := make([]byte, 32)
-	salsa20.XORKeyStream(macKey, make([]byte, 32), make([]byte, 8), key)
+	chacha20.XORKeyStream(macKey, make([]byte, 32), new([16]byte), key)
 	mac, err := blake2b.New256(macKey)
 	if err != nil {
 		panic(err)
@@ -108,6 +108,7 @@ type Peer struct {
 	bufR     []byte
 	tagR     *[TagSize]byte
 	keyAuthR *[SSize]byte
+	nonceR   *[16]byte
 	pktSizeR int
 
 	// UDP-related
@@ -126,6 +127,7 @@ type Peer struct {
 	bufT     []byte
 	tagT     *[TagSize]byte
 	keyAuthT *[SSize]byte
+	nonceT   *[16]byte
 	frameT   []byte
 	noncesT  chan *[NonceSize]byte
 }
@@ -201,7 +203,9 @@ func newPeer(isClient bool, addr string, conn io.Writer, conf *PeerConf, key *[S
 		tagR:     new([TagSize]byte),
 		tagT:     new([TagSize]byte),
 		keyAuthR: new([SSize]byte),
+		nonceR:   new([16]byte),
 		keyAuthT: new([SSize]byte),
+		nonceT:   new([16]byte),
 	}
 
 	if isClient {
@@ -271,22 +275,19 @@ func (p *Peer) EthProcess(data []byte) {
 	}
 	copy(p.frameT[len(p.frameT)-NonceSize:], (<-p.noncesT)[:])
 	var out []byte
+	copy(p.nonceT[8:], p.frameT[len(p.frameT)-NonceSize:])
 	if p.Encless {
 		var err error
-		out, err = EnclessEncode(
-			p.key,
-			p.frameT[len(p.frameT)-NonceSize:],
-			p.frameT[:len(p.frameT)-NonceSize],
-		)
+		out, err = EnclessEncode(p.key, p.nonceT, p.frameT[:len(p.frameT)-NonceSize])
 		if err != nil {
 			panic(err)
 		}
 		out = append(out, p.frameT[len(p.frameT)-NonceSize:]...)
 	} else {
-		salsa20.XORKeyStream(
+		chacha20.XORKeyStream(
 			p.bufT[:S20BS+len(p.frameT)-NonceSize],
 			p.bufT[:S20BS+len(p.frameT)-NonceSize],
-			p.frameT[len(p.frameT)-NonceSize:],
+			p.nonceT,
 			p.key,
 		)
 		copy(p.keyAuthT[:], p.bufT[:SSize])
@@ -308,13 +309,10 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 	}
 	var out []byte
 	p.BusyR.Lock()
+	copy(p.nonceR[8:], data[len(data)-NonceSize:])
 	if p.Encless {
 		var err error
-		out, err = EnclessDecode(
-			p.key,
-			data[len(data)-NonceSize:],
-			data[:len(data)-NonceSize],
-		)
+		out, err = EnclessDecode(p.key, p.nonceR, data[:len(data)-NonceSize])
 		if err != nil {
 			p.FramesUnauth++
 			p.BusyR.Unlock()
@@ -325,10 +323,10 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 			p.bufR[i] = 0
 		}
 		copy(p.bufR[S20BS:], data[TagSize:])
-		salsa20.XORKeyStream(
+		chacha20.XORKeyStream(
 			p.bufR[:S20BS+len(data)-TagSize-NonceSize],
 			p.bufR[:S20BS+len(data)-TagSize-NonceSize],
-			data[len(data)-NonceSize:],
+			p.nonceR,
 			p.key,
 		)
 		copy(p.keyAuthR[:], p.bufR[:SSize])

@@ -1,6 +1,13 @@
 @node Новости
 @section Новости
 
+@node Релиз 7.0
+@subsection Релиз 7.0
+@itemize
+@item (X)Salsa20 заменён на ChaCha20. Теоретически он должен быть
+быстрее и более безопасным.
+@end itemize
+
 @node Релиз 6.0
 @subsection Релиз 6.0
 @itemize
