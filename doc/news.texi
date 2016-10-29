@@ -7,7 +7,7 @@ See also this page @ref{Новости, on russian}.
 @section Release 7.0
 @itemize
 @item (X)Salsa20 is replaced with ChaCha20. Theoretically it should be
-faster and more secure.
+faster and more secure. Previous versions are not compatible with it!
 @item Ability to use TUN-interfaces under GNU/Linux. FreeBSD has already
 supported them without any modifications.
 @end itemize
