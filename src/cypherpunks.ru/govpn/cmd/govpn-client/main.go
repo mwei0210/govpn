@@ -34,7 +34,7 @@ import (
 var (
 	remoteAddr  = flag.String("remote", "", "Remote server address")
 	proto       = flag.String("proto", "udp", "Protocol to use: udp or tcp")
-	ifaceName   = flag.String("iface", "tap0", "TAP network interface")
+	ifaceName   = flag.String("iface", "tap0", "TUN/TAP network interface")
 	verifierRaw = flag.String("verifier", "", "Verifier")
 	keyPath     = flag.String("key", "", "Path to passphrase file")
 	upPath      = flag.String("up", "", "Path to up-script")
@@ -42,7 +42,7 @@ var (
 	stats       = flag.String("stats", "", "Enable stats retrieving on host:port")
 	proxyAddr   = flag.String("proxy", "", "Use HTTP proxy on host:port")
 	proxyAuth   = flag.String("proxy-auth", "", "user:password Basic proxy auth")
-	mtu         = flag.Int("mtu", govpn.MTUDefault, "MTU of TAP interface")
+	mtu         = flag.Int("mtu", govpn.MTUDefault, "MTU of TUN/TAP interface")
 	timeoutP    = flag.Int("timeout", 60, "Timeout seconds")
 	timeSync    = flag.Int("timesync", 0, "Time synchronization requirement")
 	noreconnect = flag.Bool("noreconnect", false, "Disable reconnection after timeout")
@@ -127,7 +127,7 @@ func main() {
 
 	tap, err = govpn.TAPListen(*ifaceName, *mtu)
 	if err != nil {
-		log.Fatalln("Can not listen on TAP interface:", err)
+		log.Fatalln("Can not listen on TUN/TAP interface:", err)
 	}
 
 	if *stats != "" {

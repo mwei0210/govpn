@@ -58,7 +58,7 @@ func NewTAP(ifaceName string, mtu int) (*TAP, error) {
 			bufZ = !bufZ
 			n, err = tap.dev.Read(buf)
 			if err != nil {
-				panic("Reading TAP:" + err.Error())
+				panic("Reading TUN/TAP:" + err.Error())
 			}
 			tap.Sink <- buf[:n]
 		}

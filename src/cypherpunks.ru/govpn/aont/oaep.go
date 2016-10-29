@@ -30,7 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // package PKG:
 //
 //     PKG = P1 || P2
-//      P1 = Salsa20(key=r, nonce=0x00, 0x00) XOR (M || BLAKE2b(r || M))
+//      P1 = ChaCha20(key=r, nonce=0x00, 0x00) XOR (M || BLAKE2b(r || M))
 //      P2 = BLAKE2b(P1) XOR r
 package aont
 
@@ -38,8 +38,8 @@ import (
 	"crypto/subtle"
 	"errors"
 
-	"github.com/dchest/blake2b"
-	"golang.org/x/crypto/salsa20"
+	"chacha20"
+	"golang.org/x/crypto/blake2b"
 )
 
 const (
@@ -48,7 +48,7 @@ const (
 )
 
 var (
-	dummyNonce []byte = make([]byte, 8)
+	dummyNonce *[16]byte = new([16]byte)
 )
 
 // Encode the data, produce AONT package. Data size will be larger than
@@ -56,13 +56,16 @@ var (
 func Encode(r *[RSize]byte, in []byte) ([]byte, error) {
 	out := make([]byte, len(in)+HSize+RSize)
 	copy(out, in)
-	h := blake2b.New256()
+	h, err := blake2b.New256(nil)
+	if err != nil {
+		return nil, err
+	}
 	h.Write(r[:])
 	h.Write(in)
 	copy(out[len(in):], h.Sum(nil))
-	salsaKey := new([32]byte)
-	copy(salsaKey[:], r[:])
-	salsa20.XORKeyStream(out, out, dummyNonce, salsaKey)
+	chachaKey := new([32]byte)
+	copy(chachaKey[:], r[:])
+	chacha20.XORKeyStream(out, out, dummyNonce, chachaKey)
 	h.Reset()
 	h.Write(out[:len(in)+32])
 	for i, b := range h.Sum(nil)[:RSize] {
@@ -77,16 +80,19 @@ func Decode(in []byte) ([]byte, error) {
 	if len(in) < HSize+RSize {
 		return nil, errors.New("Too small input buffer")
 	}
-	h := blake2b.New256()
+	h, err := blake2b.New256(nil)
+	if err != nil {
+		return nil, err
+	}
 	h.Write(in[:len(in)-RSize])
-	salsaKey := new([32]byte)
+	chachaKey := new([32]byte)
 	for i, b := range h.Sum(nil)[:RSize] {
-		salsaKey[i] = b ^ in[len(in)-RSize+i]
+		chachaKey[i] = b ^ in[len(in)-RSize+i]
 	}
 	h.Reset()
-	h.Write(salsaKey[:RSize])
+	h.Write(chachaKey[:RSize])
 	out := make([]byte, len(in)-RSize)
-	salsa20.XORKeyStream(out, in[:len(in)-RSize], dummyNonce, salsaKey)
+	chacha20.XORKeyStream(out, in[:len(in)-RSize], dummyNonce, chachaKey)
 	h.Write(out[:len(out)-HSize])
 	if subtle.ConstantTimeCompare(h.Sum(nil), out[len(out)-HSize:]) != 1 {
 		return nil, errors.New("Invalid checksum")

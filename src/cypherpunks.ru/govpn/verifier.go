@@ -23,6 +23,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"hash"
 	"io/ioutil"
 	"log"
 	"os"
@@ -30,7 +31,7 @@ import (
 
 	"cypherpunks.ru/balloon"
 	"github.com/agl/ed25519"
-	"github.com/dchest/blake2b"
+	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -54,10 +55,18 @@ func VerifierNew(s, t, p int, id *PeerId) *Verifier {
 	return &Verifier{S: s, T: t, P: p, Id: id}
 }
 
+func blake2bKeyless() hash.Hash {
+	h, err := blake2b.New256(nil)
+	if err != nil {
+		panic(err)
+	}
+	return h
+}
+
 // Apply the password: create Ed25519 keypair based on it, save public
 // key in verifier.
 func (v *Verifier) PasswordApply(password string) *[ed25519.PrivateKeySize]byte {
-	r := balloon.H(blake2b.New256, []byte(password), v.Id[:], v.S, v.T, v.P)
+	r := balloon.H(blake2bKeyless, []byte(password), v.Id[:], v.S, v.T, v.P)
 	defer SliceZero(r)
 	src := bytes.NewBuffer(r)
 	pub, prv, err := ed25519.GenerateKey(src)

@@ -7,9 +7,9 @@ release=$1
 
 git clone . $tmp/govpn-$release
 repos="
+    src/cypherpunks.ru/balloon
     src/github.com/agl/ed25519
     src/github.com/bigeagle/water
-    src/github.com/dchest/blake2b
     src/github.com/go-yaml/yaml
     src/golang.org/x/crypto
 "
@@ -26,11 +26,11 @@ golang.org/x/crypto/CONTRIBUTORS
 golang.org/x/crypto/LICENSE
 golang.org/x/crypto/PATENTS
 golang.org/x/crypto/README
+golang.org/x/crypto/blake2b
+golang.org/x/crypto/chacha20poly1305/internal/chacha20
 golang.org/x/crypto/curve25519
 golang.org/x/crypto/poly1305
-golang.org/x/crypto/salsa20
 golang.org/x/crypto/ssh/terminal
-golang.org/x/crypto/xtea
 EOF
 tar cfCI - src $tmp/includes | tar xfC - $tmp
 rm -fr src/golang.org
@@ -87,13 +87,13 @@ heartbeating, rehandshaking, real-time statistics. Ability to work
 through UDP, TCP and HTTP proxies. IPv4/IPv6-compatibility.
 GNU/Linux and FreeBSD support.
 
-----------------8<-----------------8<-----------------8<----------------
+------------------------ >8 ------------------------
 
 The main improvements for that release are:
 
 $(git cat-file -p $release | sed -n '6,/^.*BEGIN/p' | sed '$d')
 
-----------------8<-----------------8<-----------------8<----------------
+------------------------ >8 ------------------------
 
 GoVPN's home page is: http://www.govpn.info/
 also available as Tor hidden service: http://2wir2p7ibeu72jk3.onion/
@@ -133,13 +133,13 @@ GoVPN это простой демон виртуальных частных с�
 реального времени. Возможность работы поверх UDP, TCP и HTTP прокси.
 Совместимость с IPv4 и IPv6. Поддержка GNU/Linux и FreeBSD.
 
-----------------8<-----------------8<-----------------8<----------------
+------------------------ >8 ------------------------
 
 Основные усовершенствования в этом релизе:
 
 $(git cat-file -p $release | sed -n '6,/^.*BEGIN/p' | sed '$d')
 
-----------------8<-----------------8<-----------------8<----------------
+------------------------ >8 ------------------------
 
 Домашняя страница GoVPN: http://www.govpn.info/
 также доступна как скрытый сервис Tor: http://2wir2p7ibeu72jk3.onion/

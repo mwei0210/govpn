@@ -5,8 +5,12 @@ You can obtain releases source code prepared tarballs from the links below
 (or use @url{https://sourceforge.net/projects/govpn/files/, Sourceforge mirror}).
 Do not forget to check tarball @ref{Integrity, integrity}.
 
-@multitable {XXXXX} {XXXX KiB} {link sign} {xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx}
+@multitable {XXXXX} {XXXX KiB} {link sign} {xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx}
 @headitem Version @tab Size @tab Tarball @tab SHA256 checksum
+
+@item @ref{Release 6.0, 6.0} @tab 310 KiB
+@tab @url{download/govpn-6.0.tar.xz, link} @url{download/govpn-6.0.tar.xz.sig, sign}
+@tab @code{3ACAE3B9 884F3260 38FCA9CE 6A309DF6 71BE6386 1FB2058B C79AE7DC 2A1A1811}
 
 @item @ref{Release 5.10, 5.10} @tab 316 KiB
 @tab @url{download/govpn-5.10.tar.xz, link} @url{download/govpn-5.10.tar.xz.sig, sign}

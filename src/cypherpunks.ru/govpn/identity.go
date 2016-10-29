@@ -27,7 +27,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dchest/blake2b"
+	"golang.org/x/crypto/blake2b"
 )
 
 const (
@@ -73,8 +73,12 @@ func (mc *MACCache) Update(peers *map[PeerId]*PeerConf) {
 			mc.cache[pid].ts = pc.TimeSync
 		} else {
 			log.Println("Adding key", pid)
+			mac, err := blake2b.New256(pid[:])
+			if err != nil {
+				panic(err)
+			}
 			mc.cache[pid] = &MACAndTimeSync{
-				mac: blake2b.NewMAC(8, pid[:]),
+				mac: mac,
 				ts:  pc.TimeSync,
 			}
 		}

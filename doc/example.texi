@@ -9,7 +9,7 @@ WiFi-reachable gateway.
 @item You want to create virtual encrypted and authenticated 172.16.0/24
 network and use it as a default transport.
 @item Assume that outgoing GoVPN packets can be fragmented, so we do not
-bother configuring MTU of TAP interfaces. For better performance just
+bother configuring MTU of TUN/TAP interfaces. For better performance just
 lower it and check that no fragmentation of outgoing UDP packets occurs.
 @end itemize
 
@@ -29,7 +29,7 @@ Place the following YAML configuration entry on the server's side:
 
     Alice:
         up: /path/to/up.sh
-        iface: or TAP interface name
+        iface: or TUN/TAP interface name
         verifier: $balloon$s=32768,t=16,p=2$bwR5VjeCYIQaa8SeaI3rqg$KCNIqfS4DGsBTtVytamAzcISgrlEWvNxan1UfBrFu10
 @end verbatim
 

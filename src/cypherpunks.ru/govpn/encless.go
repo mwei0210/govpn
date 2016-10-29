@@ -35,7 +35,7 @@ const (
 // encryption nor steganography) over All-Or-Nothing-Transformed data.
 // nonce is 64-bit nonce. Output data will be EnclessEnlargeSize larger.
 // It also consumes 64-bits of entropy.
-func EnclessEncode(authKey *[32]byte, nonce, in []byte) ([]byte, error) {
+func EnclessEncode(authKey *[32]byte, nonce *[16]byte, in []byte) ([]byte, error) {
 	r := new([aont.RSize]byte)
 	var err error
 	if _, err = io.ReadFull(Rand, r[:]); err != nil {
@@ -46,7 +46,7 @@ func EnclessEncode(authKey *[32]byte, nonce, in []byte) ([]byte, error) {
 		return nil, err
 	}
 	out := append(
-		cnw.Chaff(authKey, nonce, aonted[:aont.RSize]),
+		cnw.Chaff(authKey, nonce[8:], aonted[:aont.RSize]),
 		aonted[aont.RSize:]...,
 	)
 	SliceZero(aonted[:aont.RSize])
@@ -54,10 +54,10 @@ func EnclessEncode(authKey *[32]byte, nonce, in []byte) ([]byte, error) {
 }
 
 // Decode EnclessEncode-ed data.
-func EnclessDecode(authKey *[32]byte, nonce, in []byte) ([]byte, error) {
+func EnclessDecode(authKey *[32]byte, nonce *[16]byte, in []byte) ([]byte, error) {
 	var err error
 	winnowed, err := cnw.Winnow(
-		authKey, nonce, in[:aont.RSize*cnw.EnlargeFactor],
+		authKey, nonce[8:], in[:aont.RSize*cnw.EnlargeFactor],
 	)
 	if err != nil {
 		return nil, err

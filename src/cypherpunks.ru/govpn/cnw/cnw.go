@@ -34,11 +34,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // one is over "0". If bit value is 1, then first is taken over "0" and
 // second is over "1".
 //
-// Poly1305 uses 256-bit one-time key. We generate it using XSalsa20 for
+// Poly1305 uses 256-bit one-time key. We generate it using ChaCha20 for
 // for the whole byte at once (16 MACs).
 //
-//     MACKey1, MACKey2, ... = XSalsa20(authKey, nonce, 0x00...)
-//     nonce = prefix || 0x00... || big endian byte number
+//     MACKey1, MACKey2, ... = ChaCha20(authKey, nonce, 0x00...)
+//     nonce = prefix || big endian byte number
 package cnw
 
 import (
@@ -46,8 +46,8 @@ import (
 	"encoding/binary"
 	"errors"
 
+	"chacha20"
 	"golang.org/x/crypto/poly1305"
-	"golang.org/x/crypto/salsa20"
 )
 
 const (
@@ -65,15 +65,15 @@ func zero(in []byte) {
 func Chaff(authKey *[32]byte, noncePrfx, in []byte) []byte {
 	out := make([]byte, len(in)*EnlargeFactor)
 	keys := make([]byte, 8*64)
-	nonce := make([]byte, 24)
+	nonce := new([16]byte)
 	copy(nonce[:8], noncePrfx)
 	var i int
 	var v byte
 	tag := new([16]byte)
 	macKey := new([32]byte)
 	for n, b := range in {
-		binary.BigEndian.PutUint64(nonce[16:], uint64(n))
-		salsa20.XORKeyStream(keys, keys, nonce, authKey)
+		binary.BigEndian.PutUint64(nonce[8:], uint64(n))
+		chacha20.XORKeyStream(keys, keys, nonce, authKey)
 		for i = 0; i < 8; i++ {
 			v = (b >> uint8(i)) & 1
 			copy(macKey[:], keys[64*i:64*i+32])
@@ -104,7 +104,7 @@ func Winnow(authKey *[32]byte, noncePrfx, in []byte) ([]byte, error) {
 	}
 	out := make([]byte, len(in)/EnlargeFactor)
 	keys := make([]byte, 8*64)
-	nonce := make([]byte, 24)
+	nonce := new([16]byte)
 	copy(nonce[:8], noncePrfx)
 	var i int
 	var v byte
@@ -116,8 +116,8 @@ func Winnow(authKey *[32]byte, noncePrfx, in []byte) ([]byte, error) {
 	var is11 bool
 	var is10 bool
 	for n := 0; n < len(out); n++ {
-		binary.BigEndian.PutUint64(nonce[16:], uint64(n))
-		salsa20.XORKeyStream(keys, keys, nonce, authKey)
+		binary.BigEndian.PutUint64(nonce[8:], uint64(n))
+		chacha20.XORKeyStream(keys, keys, nonce, authKey)
 		v = 0
 		for i = 0; i < 8; i++ {
 			copy(macKey[:], keys[64*i:64*i+32])

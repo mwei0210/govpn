@@ -23,9 +23,10 @@ public key fingerprint.
 
 @item
 @verbatim
-% gpg --auto-key-locate pka --locate-keys releases at govpn dot info
+% gpg --keyserver hkp://keys.gnupg.net/ --recv-keys 0xF2F59045FFE2F4A1
 % gpg --auto-key-locate dane --locate-keys releases at govpn dot info
 % gpg --auto-key-locate wkd --locate-keys releases at govpn dot info
+% gpg --auto-key-locate pka --locate-keys releases at govpn dot info
 @end verbatim
 
 @item
