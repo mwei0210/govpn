@@ -38,7 +38,7 @@ import (
 	"crypto/subtle"
 	"errors"
 
-	"github.com/dchest/blake2b"
+	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/salsa20"
 )
 
@@ -56,7 +56,10 @@ var (
 func Encode(r *[RSize]byte, in []byte) ([]byte, error) {
 	out := make([]byte, len(in)+HSize+RSize)
 	copy(out, in)
-	h := blake2b.New256()
+	h, err := blake2b.New256(nil)
+	if err != nil {
+		return nil, err
+	}
 	h.Write(r[:])
 	h.Write(in)
 	copy(out[len(in):], h.Sum(nil))
@@ -77,7 +80,10 @@ func Decode(in []byte) ([]byte, error) {
 	if len(in) < HSize+RSize {
 		return nil, errors.New("Too small input buffer")
 	}
-	h := blake2b.New256()
+	h, err := blake2b.New256(nil)
+	if err != nil {
+		return nil, err
+	}
 	h.Write(in[:len(in)-RSize])
 	salsaKey := new([32]byte)
 	for i, b := range h.Sum(nil)[:RSize] {

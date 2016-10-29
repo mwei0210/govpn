@@ -28,7 +28,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dchest/blake2b"
+	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/poly1305"
 	"golang.org/x/crypto/salsa20"
 )
@@ -52,7 +52,10 @@ const (
 func newNonces(key *[32]byte, i uint64) chan *[NonceSize]byte {
 	macKey := make([]byte, 32)
 	salsa20.XORKeyStream(macKey, make([]byte, 32), make([]byte, 8), key)
-	mac := blake2b.NewMAC(NonceSize, macKey)
+	mac, err := blake2b.New256(macKey)
+	if err != nil {
+		panic(err)
+	}
 	nonces := make(chan *[NonceSize]byte, NonceBucketSize*3)
 	go func() {
 		for {

@@ -10,7 +10,6 @@ repos="
     src/cypherpunks.ru/balloon
     src/github.com/agl/ed25519
     src/github.com/bigeagle/water
-    src/github.com/dchest/blake2b
     src/github.com/go-yaml/yaml
     src/golang.org/x/crypto
 "
@@ -27,6 +26,7 @@ golang.org/x/crypto/CONTRIBUTORS
 golang.org/x/crypto/LICENSE
 golang.org/x/crypto/PATENTS
 golang.org/x/crypto/README
+golang.org/x/crypto/blake2b
 golang.org/x/crypto/curve25519
 golang.org/x/crypto/poly1305
 golang.org/x/crypto/salsa20

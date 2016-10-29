@@ -27,7 +27,7 @@ import (
 
 	"github.com/agl/ed25519"
 	"github.com/agl/ed25519/extra25519"
-	"github.com/dchest/blake2b"
+	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/salsa20"
 )
@@ -136,7 +136,10 @@ func idTag(id *PeerId, timeSync int, data []byte) []byte {
 	enc := make([]byte, 8)
 	copy(enc, data)
 	AddTimeSync(timeSync, enc)
-	mac := blake2b.NewMAC(8, id[:])
+	mac, err := blake2b.New256(id[:])
+	if err != nil {
+		panic(err)
+	}
 	mac.Write(enc)
 	mac.Sum(enc[:0])
 	return enc
