@@ -26,6 +26,6 @@ Place the following YAML configuration entry on the server's side:
 
     $username:
         up: /path/to/up.sh
-        iface: or TAP interface name
+        iface: or TUN/TAP interface name
         verifier: $verifierS
 EOF

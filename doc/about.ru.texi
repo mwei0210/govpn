@@ -70,7 +70,7 @@ A-EKE (Diffie-Hellman Augmented Encrypted Key Exchange)).
 идентификатор}, невидимый третьим лицам (они анонимны для них).
 
 @item
-Использует @url{https://ru.wikipedia.org/wiki/TUN/TAP, TAP} низлежащие
+Использует @url{https://ru.wikipedia.org/wiki/TUN/TAP, TUN/TAP} низлежащие
 сетевые интерфейсы.
 
 @item

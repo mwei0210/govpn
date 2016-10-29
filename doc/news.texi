@@ -8,6 +8,8 @@ See also this page @ref{Новости, on russian}.
 @itemize
 @item (X)Salsa20 is replaced with ChaCha20. Theoretically it should be
 faster and more secure.
+@item Ability to use TUN-interfaces under GNU/Linux. FreeBSD has already
+supported them without any modifications.
 @end itemize
 
 @node Release 6.0

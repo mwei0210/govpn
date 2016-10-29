@@ -7,7 +7,7 @@ options client has the following ones:
 @table @option
 
 @item -mtu
-Expected TAP interface @ref{MTU}.
+Expected TUN/TAP interface @ref{MTU}.
 
 @item -proto
 @ref{Network, Network protocol} to use. Can be either @emph{udp}
@@ -25,7 +25,7 @@ server.
 Address (@code{host:port} format) of remote server we need to connect to.
 
 @item -iface
-TAP interface name.
+TUN/TAP interface name.
 
 @item -verifier
 Our client's @ref{Verifier}.
