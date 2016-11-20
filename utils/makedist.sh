@@ -154,7 +154,7 @@ SHA256 хэш: $hash
 Идентификатор GPG ключа: 0xF2F59045FFE2F4A1 GoVPN releases <releases@govpn.info>
 Отпечаток: D269 9B73 3C41 2068 D8DA  656E F2F5 9045 FFE2 F4A1
 
-Пожалуйста все вопросы касающиеся использования GoVPN, отчёты об ошибках
+Пожалуйста, все вопросы касающиеся использования GoVPN, отчёты об ошибках
 и патчи отправляйте в govpn-devel почтовую рассылку:
 https://lists.cypherpunks.ru/pipermail/govpn-devel/
 EOF
