@@ -144,9 +144,7 @@ func main() {
 	signal.Notify(termSignal, os.Interrupt, os.Kill)
 	c := client.NewClient(conf, verifier, termSignal)
 	go c.MainCycle()
-	if err := <-c.Error; err != nil {
+	if err = <-c.Error; err != nil {
 		log.Fatalln(err)
-	} else {
-		log.Println("Closed VPN tunnel")
 	}
 }
