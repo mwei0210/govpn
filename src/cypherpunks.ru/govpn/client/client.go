@@ -30,7 +30,7 @@ import (
 	"cypherpunks.ru/govpn"
 )
 
-type Protocol uint8
+type Protocol int
 
 const (
 	ProtocolUDP Protocol = iota
