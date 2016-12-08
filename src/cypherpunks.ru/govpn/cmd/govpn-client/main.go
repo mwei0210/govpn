@@ -84,8 +84,7 @@ func main() {
 	}
 
 	if *proxyAddr != "" && protocol == client.ProtocolUDP {
-		log.Println("Proxy is supported for TCP only, switch")
-		protocol = client.ProtocolTCP
+		log.Fatalln("HTTP proxy is supported only in TCP mode")
 	}
 
 	if *verifierRaw == "" {
