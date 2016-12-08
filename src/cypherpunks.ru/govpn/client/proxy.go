@@ -16,32 +16,34 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package main
+package client
 
 import (
 	"bufio"
 	"encoding/base64"
-	"log"
 	"net"
+	"fmt"
 	"net/http"
 
 	"cypherpunks.ru/govpn"
 )
 
-func proxyTCP(timeouted, rehandshaking, termination chan struct{}) {
-	proxyAddr, err := net.ResolveTCPAddr("tcp", *proxyAddr)
+func (c *Client) proxyTCP() {
+	proxyAddr, err := net.ResolveTCPAddr("tcp", c.config.ProxyAddress)
 	if err != nil {
-		log.Fatalln("Can not resolve proxy address:", err)
+		c.Error <- err
+		return
 	}
 	conn, err := net.DialTCP("tcp", nil, proxyAddr)
 	if err != nil {
-		log.Fatalln("Can not connect to proxy:", err)
+		c.Error <- err
+		return
 	}
-	req := "CONNECT " + *remoteAddr + " HTTP/1.1\n"
-	req += "Host: " + *remoteAddr + "\n"
-	if *proxyAuth != "" {
+	req := "CONNECT " + c.config.ProxyAddress + " HTTP/1.1\n"
+	req += "Host: " + c.config.ProxyAddress + "\n"
+	if c.config.ProxyAuthentication != "" {
 		req += "Proxy-Authorization: Basic "
-		req += base64.StdEncoding.EncodeToString([]byte(*proxyAuth)) + "\n"
+		req += base64.StdEncoding.EncodeToString([]byte(c.config.ProxyAuthentication)) + "\n"
 	}
 	req += "\n"
 	conn.Write([]byte(req))
@@ -50,8 +52,9 @@ func proxyTCP(timeouted, rehandshaking, termination chan struct{}) {
 		&http.Request{Method: "CONNECT"},
 	)
 	if err != nil || resp.StatusCode != http.StatusOK {
-		log.Fatalln("Unexpected response from proxy")
+		c.Error <- fmt.Errorf("Unexpected response from proxy: %s", err.Error())
+		return
 	}
-	govpn.Printf(`[proxy-connected remote="%s" addr="%s"]`, *remoteAddr, *proxyAddr)
-	go handleTCP(conn, timeouted, rehandshaking, termination)
+	govpn.Printf(`[proxy-connected remote="%s" addr="%s"]`, c.config.RemoteAddress, *proxyAddr)
+	go c.handleTCP(conn)
 }
