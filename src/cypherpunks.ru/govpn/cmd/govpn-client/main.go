@@ -103,10 +103,7 @@ func main() {
 		if protocol != client.ProtocolTCP {
 			log.Fatalln("Currently encryptionless mode works only with TCP")
 		}
-		if !*noisy {
-			log.Println("-encless is on, force -noisy mode")
-			*noisy = true
-		}
+		*noisy = true
 	}
 	conf := client.Configuration{
 		PrivateKey: priv,
