@@ -7,9 +7,10 @@
 [submodule "src/golang.org/x/crypto"]
 	path = src/golang.org/x/crypto
 	url = https://go.googlesource.com/crypto
-[submodule "src/github.com/go-yaml/yaml"]
-	path = src/github.com/go-yaml/yaml
-	url = https://github.com/go-yaml/yaml.git
 [submodule "src/cypherpunks.ru/balloon"]
 	path = src/cypherpunks.ru/balloon
 	url = git://git.cypherpunks.ru/balloon.git
+[submodule "src/gopkg.in/yaml.v2"]
+	path = src/gopkg.in/yaml.v2
+	url = https://github.com/go-yaml/yaml.git
+	branch = v2
