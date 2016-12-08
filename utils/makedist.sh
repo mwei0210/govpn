@@ -10,7 +10,7 @@ repos="
     src/cypherpunks.ru/balloon
     src/github.com/agl/ed25519
     src/github.com/bigeagle/water
-    src/github.com/go-yaml/yaml
+    src/gopkg.in/yaml.v2
     src/golang.org/x/crypto
 "
 for repo in $repos; do
