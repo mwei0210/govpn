@@ -54,8 +54,8 @@ func main() {
 		syslog      = flag.Bool("syslog", false, "Enable logging to syslog")
 		version     = flag.Bool("version", false, "Print version information")
 		warranty    = flag.Bool("warranty", false, "Print warranty information")
-		protocol client.Protocol
-		err error
+		protocol    client.Protocol
+		err         error
 	)
 
 	flag.Parse()
@@ -123,16 +123,16 @@ func main() {
 			Verifier: verifier,
 			DSAPriv:  priv,
 		},
-		Protocol: protocol,
-		InterfaceName: *ifaceName,
-		ProxyAddress: *proxyAddr,
+		Protocol:            protocol,
+		InterfaceName:       *ifaceName,
+		ProxyAddress:        *proxyAddr,
 		ProxyAuthentication: *proxyAuth,
-		RemoteAddress: *remoteAddr,
-		UpPath: *upPath,
-		DownPath: *downPath,
-		StatsAddress: *stats,
-		NoReconnect: *noreconnect,
-		MTU: *mtu,
+		RemoteAddress:       *remoteAddr,
+		UpPath:              *upPath,
+		DownPath:            *downPath,
+		StatsAddress:        *stats,
+		NoReconnect:         *noreconnect,
+		MTU:                 *mtu,
 	}
 	if err = conf.Validate(); err != nil {
 		log.Fatalln("Invalid settings:", err)

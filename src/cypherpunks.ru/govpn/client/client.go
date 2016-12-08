@@ -1,13 +1,14 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os"
-	"errors"
 	"time"
 
 	"github.com/agl/ed25519"
+
 	"cypherpunks.ru/govpn"
 )
 
@@ -34,7 +35,7 @@ type Configuration struct {
 
 func (c *Configuration) Validate() error {
 	if c.MTU > govpn.MTUMax {
-		return fmt.Errorf("Invalid MTU %d, maximum allowable is %d",c.MTU, govpn.MTUMax)
+		return fmt.Errorf("Invalid MTU %d, maximum allowable is %d", c.MTU, govpn.MTUMax)
 	}
 	if len(c.RemoteAddress) == 0 {
 		return errors.New("Missing RemoteAddress")
@@ -62,7 +63,7 @@ type Client struct {
 	config        Configuration
 
 	// Error receive any error of all routines
-	Error         chan error
+	Error chan error
 }
 
 func (c *Client) MainCycle() {
@@ -83,7 +84,7 @@ func (c *Client) MainCycle() {
 		go govpn.StatsProcessor(c.statsPort, &c.knownPeers)
 	}
 
-	MainCycle:
+MainCycle:
 	for {
 		c.timeouted = make(chan struct{})
 		c.rehandshaking = make(chan struct{})
@@ -124,11 +125,11 @@ func (c *Client) MainCycle() {
 
 func NewClient(conf Configuration, verifier *govpn.Verifier, termSignal chan os.Signal) *Client {
 	client := &Client{
-		idsCache: govpn.NewMACCache(),
+		idsCache:    govpn.NewMACCache(),
 		firstUpCall: true,
-		config: conf,
-		termSignal: termSignal,
-		Error: make(chan error, 1),
+		config:      conf,
+		termSignal:  termSignal,
+		Error:       make(chan error, 1),
 	}
 	confs := map[govpn.PeerId]*govpn.PeerConf{*verifier.Id: conf.Peer}
 	client.idsCache.Update(&confs)

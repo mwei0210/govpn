@@ -21,8 +21,8 @@ package client
 import (
 	"bufio"
 	"encoding/base64"
-	"net"
 	"fmt"
+	"net"
 	"net/http"
 
 	"cypherpunks.ru/govpn"
