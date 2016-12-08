@@ -129,7 +129,7 @@ MainCycle:
 }
 
 func NewClient(conf Configuration, verifier *govpn.Verifier, termSignal chan os.Signal) *Client {
-	client := &Client{
+	client := Client{
 		idsCache:    govpn.NewMACCache(),
 		firstUpCall: true,
 		config:      conf,
@@ -138,5 +138,5 @@ func NewClient(conf Configuration, verifier *govpn.Verifier, termSignal chan os.
 	}
 	confs := map[govpn.PeerId]*govpn.PeerConf{*verifier.Id: conf.Peer}
 	client.idsCache.Update(&confs)
-	return client
+	return &client
 }
