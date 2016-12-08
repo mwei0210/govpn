@@ -27,7 +27,8 @@ type Configuration struct {
 	ProxyAddress        string
 	ProxyAuthentication string
 	RemoteAddress       string
-	UpPath, DownPath    string
+	UpPath              string
+	DownPath            string
 	StatsAddress        string
 	NoReconnect         bool
 	MTU                 int
@@ -62,7 +63,7 @@ type Client struct {
 	termSignal    chan os.Signal
 	config        Configuration
 
-	// Error receive any error of all routines
+	// Error channel receives any kind of routine errors
 	Error chan error
 }
 
@@ -103,7 +104,7 @@ MainCycle:
 		case <-c.termSignal:
 			govpn.BothPrintf(`[finish remote="%s"]`, c.config.RemoteAddress)
 			c.termination <- struct{}{}
-			// send a non-error to let know everything went fine
+			// empty value signals that everything is fine
 			c.Error <- nil
 			break MainCycle
 		case <-c.timeouted:
@@ -118,7 +119,11 @@ MainCycle:
 		close(c.rehandshaking)
 		close(c.termination)
 	}
-	if _, err = govpn.ScriptCall(c.config.DownPath, c.config.InterfaceName, c.config.RemoteAddress); err != nil {
+	if _, err = govpn.ScriptCall(
+		c.config.DownPath,
+		c.config.InterfaceName,
+		c.config.RemoteAddress,
+	); err != nil {
 		c.Error <- err
 	}
 }
