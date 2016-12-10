@@ -129,7 +129,7 @@ MainCycle:
 			if c.config.NoReconnect {
 				break MainCycle
 			}
-			govpn.BothPrintf(`[sleep seconds="%d"]`, c.config.Peer.Timeout)
+			govpn.BothPrintf(`[sleep seconds="%d"]`, c.config.Peer.Timeout/time.Second)
 			time.Sleep(c.config.Peer.Timeout)
 		case <-c.rehandshaking:
 		}
