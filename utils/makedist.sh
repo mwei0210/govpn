@@ -49,6 +49,7 @@ rm -r doc/.well-known doc/govpn.html/.well-known
 rm utils/makedist.sh
 find . -name .git -type d | xargs rm -fr
 find . -name .gitignore -delete
+rm .gitmodules
 
 cd ..
 tar cvf govpn-"$release".tar govpn-"$release"
