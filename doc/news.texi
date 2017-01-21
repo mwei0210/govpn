@@ -298,9 +298,3 @@ consuming and resource heavy computations.
 @itemize
 @item FreeBSD support.
 @end itemize
-
-@node Release 1.0
-@section Release 1.0
-@itemize
-@item Initial stable release.
-@end itemize

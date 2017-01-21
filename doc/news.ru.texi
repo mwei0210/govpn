@@ -303,9 +303,3 @@ A-EKE с PBKDF2 верификаторами устойчивы к атакам 
 @itemize
 @item Поддержка FreeBSD.
 @end itemize
-
-@node Релиз 1.0
-@subsection Релиз 1.0
-@itemize
-@item Первый стабильный релиз.
-@end itemize
