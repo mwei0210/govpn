@@ -56,13 +56,17 @@ func newNonces(key *[32]byte, i uint64) chan *[NonceSize]byte {
 	if err != nil {
 		panic(err)
 	}
+	sum := make([]byte, mac.Size())
 	nonces := make(chan *[NonceSize]byte, NonceBucketSize*3)
 	go func() {
 		for {
 			buf := new([NonceSize]byte)
 			binary.BigEndian.PutUint64(buf[:], i)
 			mac.Write(buf[:])
-			mac.Sum(buf[:0])
+			sum = mac.Sum(nil)
+			for index := 0; index < NonceSize; index++ {
+				buf[index] = sum[index]
+			}
 			nonces <- buf
 			mac.Reset()
 			i += 2
