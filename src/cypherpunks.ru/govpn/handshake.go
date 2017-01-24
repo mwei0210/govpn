@@ -141,8 +141,8 @@ func idTag(id *PeerId, timeSync int, data []byte) []byte {
 		panic(err)
 	}
 	mac.Write(enc)
-	mac.Sum(enc[:0])
-	return enc
+	sum := mac.Sum(nil)
+	return sum[len(sum)-8:]
 }
 
 // Start handshake's procedure from the client. It is the entry point
