@@ -3,6 +3,14 @@
 
 See also this page @ref{Новости, on russian}.
 
+@node Release 7.1
+@section Release 7.1
+@itemize
+@item Fixed bug in client's identity generation and detection code:
+simultaneous clients may be incorrectly identified, preventing their
+connection establishing and allowing DPI to detect GoVPN packets.
+@end itemize
+
 @node Release 7.0
 @section Release 7.0
 @itemize
