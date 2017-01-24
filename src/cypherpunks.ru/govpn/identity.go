@@ -106,6 +106,7 @@ func (mc *MACCache) Find(data []byte) *PeerId {
 		return nil
 	}
 	buf := make([]byte, 8)
+	sum := make([]byte, 32)
 	mc.l.RLock()
 	for pid, mt := range mc.cache {
 		copy(buf, data)
@@ -113,7 +114,7 @@ func (mc *MACCache) Find(data []byte) *PeerId {
 		mt.l.Lock()
 		mt.mac.Reset()
 		mt.mac.Write(buf)
-		sum := mt.mac.Sum(nil)
+		mt.mac.Sum(sum[:0])
 		mt.l.Unlock()
 		if subtle.ConstantTimeCompare(sum[len(sum)-8:], data[len(data)-8:]) == 1 {
 			ppid := PeerId(pid)
