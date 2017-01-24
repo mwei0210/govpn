@@ -113,9 +113,9 @@ func (mc *MACCache) Find(data []byte) *PeerId {
 		mt.l.Lock()
 		mt.mac.Reset()
 		mt.mac.Write(buf)
-		mt.mac.Sum(buf[:0])
+		sum := mt.mac.Sum(nil)
 		mt.l.Unlock()
-		if subtle.ConstantTimeCompare(buf, data[len(data)-8:]) == 1 {
+		if subtle.ConstantTimeCompare(sum[len(sum)-8:], data[len(data)-8:]) == 1 {
 			ppid := PeerId(pid)
 			mc.l.RUnlock()
 			return &ppid
