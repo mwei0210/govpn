@@ -1,6 +1,6 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -56,13 +56,15 @@ func newNonces(key *[32]byte, i uint64) chan *[NonceSize]byte {
 	if err != nil {
 		panic(err)
 	}
+	sum := make([]byte, mac.Size())
 	nonces := make(chan *[NonceSize]byte, NonceBucketSize*3)
 	go func() {
 		for {
 			buf := new([NonceSize]byte)
 			binary.BigEndian.PutUint64(buf[:], i)
 			mac.Write(buf[:])
-			mac.Sum(buf[:0])
+			mac.Sum(sum[0:])
+			copy(buf[:], sum)
 			nonces <- buf
 			mac.Reset()
 			i += 2
@@ -86,7 +88,7 @@ type Peer struct {
 
 	// Basic
 	Addr string
-	Id   *PeerId
+	ID   *PeerID
 	Conn io.Writer `json:"-"`
 
 	// Traffic behaviour
@@ -96,7 +98,7 @@ type Peer struct {
 	Encless     bool
 	MTU         int
 
-	key *[SSize]byte `json:"-"`
+	key *[SSize]byte
 
 	// Timers
 	Timeout     time.Duration `json:"-"`
@@ -133,7 +135,7 @@ type Peer struct {
 }
 
 func (p *Peer) String() string {
-	return p.Id.String() + ":" + p.Addr
+	return p.ID.String() + ":" + p.Addr
 }
 
 // Zero peer's memory state.
@@ -183,7 +185,7 @@ func newPeer(isClient bool, addr string, conn io.Writer, conf *PeerConf, key *[S
 
 	peer := Peer{
 		Addr: addr,
-		Id:   conf.Id,
+		ID:   conf.ID,
 		Conn: conn,
 
 		NoiseEnable: noiseEnable,

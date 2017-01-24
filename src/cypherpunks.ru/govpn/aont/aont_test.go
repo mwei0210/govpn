@@ -1,6 +1,6 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	testKey *[16]byte = new([16]byte)
+	testKey = new([16]byte)
 )
 
 func init() {

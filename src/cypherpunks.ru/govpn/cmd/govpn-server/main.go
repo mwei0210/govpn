@@ -1,6 +1,6 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -108,7 +108,7 @@ MainCycle:
 			govpn.BothPrintf(`[terminating bind="%s"]`, *bindAddr)
 			for _, ps := range peers {
 				govpn.ScriptCall(
-					confs[*ps.peer.Id].Down,
+					confs[*ps.peer.ID].Down,
 					ps.tap.Name,
 					ps.peer.Addr,
 				)
@@ -125,7 +125,7 @@ MainCycle:
 				}
 			}
 			peersLock.Lock()
-			peersByIdLock.Lock()
+			peersByIDLock.Lock()
 			kpLock.Lock()
 			for addr, ps := range peers {
 				ps.peer.BusyR.Lock()
@@ -135,9 +135,9 @@ MainCycle:
 					govpn.Printf(`[peer-delete bind="%s" peer="%s"]`, *bindAddr, ps.peer)
 					delete(peers, addr)
 					delete(knownPeers, addr)
-					delete(peersById, *ps.peer.Id)
+					delete(peersByID, *ps.peer.ID)
 					go govpn.ScriptCall(
-						confs[*ps.peer.Id].Down,
+						confs[*ps.peer.ID].Down,
 						ps.tap.Name,
 						ps.peer.Addr,
 					)
@@ -146,7 +146,7 @@ MainCycle:
 			}
 			hsLock.Unlock()
 			peersLock.Unlock()
-			peersByIdLock.Unlock()
+			peersByIDLock.Unlock()
 			kpLock.Unlock()
 		}
 	}

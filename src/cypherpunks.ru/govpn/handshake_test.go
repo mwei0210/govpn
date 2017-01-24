@@ -1,6 +1,6 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ import (
 
 func TestHandshakeSymmetric(t *testing.T) {
 	// initial values are taken from peer_test.go's init()
-	v := VerifierNew(1<<10, 1<<4, 1, &testPeerId)
+	v := VerifierNew(1<<10, 1<<4, 1, &testPeerID)
 	testConf.Verifier = v
 	testConf.DSAPriv = v.PasswordApply("does not matter")
 	hsS := NewHandshake("server", Dummy{&testCt}, testConf)
@@ -41,7 +41,7 @@ func TestHandshakeSymmetric(t *testing.T) {
 
 func TestHandshakeNoiseSymmetric(t *testing.T) {
 	// initial values are taken from peer_test.go's init()
-	v := VerifierNew(1<<10, 1<<4, 1, &testPeerId)
+	v := VerifierNew(1<<10, 1<<4, 1, &testPeerID)
 	testConf.Verifier = v
 	testConf.DSAPriv = v.PasswordApply("does not matter")
 	testConf.Noise = true
@@ -59,7 +59,7 @@ func TestHandshakeNoiseSymmetric(t *testing.T) {
 }
 func TestHandshakeEnclessSymmetric(t *testing.T) {
 	// initial values are taken from peer_test.go's init()
-	v := VerifierNew(1<<10, 1<<4, 1, &testPeerId)
+	v := VerifierNew(1<<10, 1<<4, 1, &testPeerID)
 	testConf.Verifier = v
 	testConf.DSAPriv = v.PasswordApply("does not matter")
 	testConf.Encless = true

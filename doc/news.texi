@@ -3,6 +3,14 @@
 
 See also this page @ref{Новости, on russian}.
 
+@node Release 7.1
+@section Release 7.1
+@itemize
+@item Fixed bug in client's identity generation and detection code:
+simultaneous clients may be incorrectly identified, preventing their
+connection establishing and allowing DPI to detect GoVPN packets.
+@end itemize
+
 @node Release 7.0
 @section Release 7.0
 @itemize
@@ -74,7 +82,7 @@ has some specific issues that caused panics on previous versions.
 @node Release 5.4
 @section Release 5.4
 @itemize
-@item Added optional @ref{Timesync, time synchronization} requirement.
+@item Added optional time synchronization requirement.
 It will add timestamps in handshake PRP authentication, disallowing to
 repeat captured packet and get reply from the server, making it visible
 to DPI.
@@ -107,15 +115,15 @@ with @emph{BLAKE2b} in handshake code.
 @node Release 5.0
 @section Release 5.0
 @itemize
-@item New optional @ref{Encless, encryptionless mode} of operation.
+@item New optional encryptionless mode of operation.
 Technically no encryption functions are applied for outgoing packets, so
 you can not be forced to reveal your encryption keys or sued for
 encryption usage.
-@item @ref{MTU}s are configured on per-user basis.
+@item MTUs are configured on per-user basis.
 @item Simplified payload padding scheme, saving one byte of data.
 @item Ability to specify TAP interface name explicitly without any
 up-scripts for convenience.
-@item @command{govpn-verifier} utility also can use @ref{EGD}.
+@item @command{govpn-verifier} utility also can use EGD.
 @end itemize
 
 @node Release 4.2
@@ -147,9 +155,9 @@ hidden. Now they are indistinguishable from transport messages.
 @node Release 3.5
 @section Release 3.5
 @itemize
-@item Ability to use @ref{Network, TCP} network transport.
+@item Ability to use TCP network transport.
 Server can listen on both UDP and TCP sockets.
-@item Ability to use @ref{Proxy, HTTP proxies} (through CONNECT method)
+@item Ability to use HTTP proxies (through CONNECT method)
 for accessing the server. Server can also emulate HTTP proxy behaviour.
 @item Updated Poly1305 library with ARM-related bugfixes.
 @item Go 1.5+ version is highly recommended because of performance
@@ -159,7 +167,7 @@ reasons.
 @node Release 3.4
 @section Release 3.4
 @itemize
-@item Ability to use external @ref{EGD}-compatible PRNGs. Now you are
+@item Ability to use external EGD-compatible PRNGs. Now you are
 able to use GoVPN even on systems with the bad @file{/dev/random},
 providing higher quality entropy from external sources.
 @item Removed @option{-noncediff} option. It is replaced with in-memory
@@ -297,10 +305,4 @@ consuming and resource heavy computations.
 @section Release 1.1
 @itemize
 @item FreeBSD support.
-@end itemize
-
-@node Release 1.0
-@section Release 1.0
-@itemize
-@item Initial stable release.
 @end itemize

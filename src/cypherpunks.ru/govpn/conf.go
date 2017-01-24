@@ -1,6 +1,6 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ import (
 )
 
 type PeerConf struct {
-	Id          *PeerId       `yaml:"-"`
+	ID          *PeerID       `yaml:"-"`
 	Name        string        `yaml:"name"`
 	Iface       string        `yaml:"iface"`
 	MTU         int           `yaml:"mtu"`

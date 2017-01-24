@@ -1,6 +1,6 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -35,22 +35,27 @@ var (
 	handshakes map[string]*govpn.Handshake = make(map[string]*govpn.Handshake)
 	hsLock     sync.RWMutex
 
-	peers     map[string]*PeerState = make(map[string]*PeerState)
+	peers     = make(map[string]*PeerState)
 	peersLock sync.RWMutex
 
-	peersById     map[govpn.PeerId]string = make(map[govpn.PeerId]string)
-	peersByIdLock sync.RWMutex
+	peersByID     = make(map[govpn.PeerID]string)
+	peersByIDLock sync.RWMutex
 
 	knownPeers govpn.KnownPeers
 	kpLock     sync.RWMutex
 )
 
-func callUp(peerId *govpn.PeerId, remoteAddr string) (string, error) {
-	ifaceName := confs[*peerId].Iface
-	if confs[*peerId].Up != "" {
-		result, err := govpn.ScriptCall(confs[*peerId].Up, ifaceName, remoteAddr)
+func callUp(peerID *govpn.PeerID, remoteAddr string) (string, error) {
+	ifaceName := confs[*peerID].Iface
+	if confs[*peerID].Up != "" {
+		result, err := govpn.ScriptCall(confs[*peerID].Up, ifaceName, remoteAddr)
 		if err != nil {
-			govpn.Printf(`[script-failed bind="%s" path="%s" err="%s"]`, *bindAddr, confs[*peerId].Up, err)
+			govpn.Printf(
+				`[script-failed bind="%s" path="%s" err="%s"]`,
+				*bindAddr,
+				confs[*peerID].Up,
+				err,
+			)
 			return "", err
 		}
 		if ifaceName == "" {
@@ -62,7 +67,7 @@ func callUp(peerId *govpn.PeerId, remoteAddr string) (string, error) {
 		}
 	}
 	if ifaceName == "" {
-		govpn.Printf(`[tap-failed bind="%s" peer="%s"]`, *bindAddr, *peerId)
+		govpn.Printf(`[tap-failed bind="%s" peer="%s"]`, *bindAddr, *peerID)
 	}
 	return ifaceName, nil
 }

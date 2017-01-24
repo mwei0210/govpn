@@ -1,1 +1,0 @@
-doc/news.ru.texi

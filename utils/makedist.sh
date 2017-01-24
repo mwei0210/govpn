@@ -10,7 +10,7 @@ repos="
     src/cypherpunks.ru/balloon
     src/github.com/agl/ed25519
     src/github.com/bigeagle/water
-    src/github.com/go-yaml/yaml
+    src/gopkg.in/yaml.v2
     src/golang.org/x/crypto
 "
 for repo in $repos; do
@@ -44,11 +44,13 @@ You can obtain releases source code prepared tarballs on
 @url{http://www.govpn.info/}.
 EOF
 make -C doc
-rm -r doc/.well-known doc/govpn.html/.well-known
+./utils/news.sh
+rm -r doc/.well-known doc/govpn.html/.well-known utils/news.sh
 
 rm utils/makedist.sh
 find . -name .git -type d | xargs rm -fr
 find . -name .gitignore -delete
+rm .gitmodules
 
 cd ..
 tar cvf govpn-"$release".tar govpn-"$release"
@@ -154,7 +156,7 @@ SHA256 хэш: $hash
 Идентификатор GPG ключа: 0xF2F59045FFE2F4A1 GoVPN releases <releases@govpn.info>
 Отпечаток: D269 9B73 3C41 2068 D8DA  656E F2F5 9045 FFE2 F4A1
 
-Пожалуйста все вопросы касающиеся использования GoVPN, отчёты об ошибках
+Пожалуйста, все вопросы касающиеся использования GoVPN, отчёты об ошибках
 и патчи отправляйте в govpn-devel почтовую рассылку:
 https://lists.cypherpunks.ru/pipermail/govpn-devel/
 EOF

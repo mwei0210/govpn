@@ -1,6 +1,6 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -45,14 +45,14 @@ type Verifier struct {
 	S   int
 	T   int
 	P   int
-	Id  *PeerId
+	ID  *PeerID
 	Pub *[ed25519.PublicKeySize]byte
 }
 
 // Generate new verifier for given peer, with specified password and
 // hashing parameters.
-func VerifierNew(s, t, p int, id *PeerId) *Verifier {
-	return &Verifier{S: s, T: t, P: p, Id: id}
+func VerifierNew(s, t, p int, id *PeerID) *Verifier {
+	return &Verifier{S: s, T: t, P: p, ID: id}
 }
 
 func blake2bKeyless() hash.Hash {
@@ -66,7 +66,7 @@ func blake2bKeyless() hash.Hash {
 // Apply the password: create Ed25519 keypair based on it, save public
 // key in verifier.
 func (v *Verifier) PasswordApply(password string) *[ed25519.PrivateKeySize]byte {
-	r := balloon.H(blake2bKeyless, []byte(password), v.Id[:], v.S, v.T, v.P)
+	r := balloon.H(blake2bKeyless, []byte(password), v.ID[:], v.S, v.T, v.P)
 	defer SliceZero(r)
 	src := bytes.NewBuffer(r)
 	pub, prv, err := ed25519.GenerateKey(src)
@@ -95,8 +95,8 @@ func VerifierFromString(input string) (*Verifier, error) {
 	v := Verifier{S: s, T: t, P: p}
 	id := new([IDSize]byte)
 	copy(id[:], salt)
-	pid := PeerId(*id)
-	v.Id = &pid
+	pid := PeerID(*id)
+	v.ID = &pid
 	if len(ss) == 5 {
 		pub, err := base64.RawStdEncoding.DecodeString(ss[4])
 		if err != nil {
@@ -113,7 +113,7 @@ func VerifierFromString(input string) (*Verifier, error) {
 func (v *Verifier) ShortForm() string {
 	return fmt.Sprintf(
 		"$balloon$s=%d,t=%d,p=%d$%s",
-		v.S, v.T, v.P, base64.RawStdEncoding.EncodeToString(v.Id[:]),
+		v.S, v.T, v.P, base64.RawStdEncoding.EncodeToString(v.ID[:]),
 	)
 }
 

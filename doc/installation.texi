@@ -18,17 +18,7 @@ and GNU ones are fine) is recommended for convenient building.
 @url{https://www.gnu.org/software/texinfo/, Texinfo} (6.1+ version is
 recommended) is used for building documentation. Possibly you also need
 to install TUN/TAP interface utilities (depending on your operating
-system): @code{uml-utilities} package in most GNU/Linux distributions.
-
-Included required libraries:
-
-@multitable @columnfractions .40 .20 .40
-@headitem Library @tab Platform @tab Licence
-@item @code{github.com/agl/ed25519} @tab All @tab BSD 3-Clause
-@item @code{github.com/bigeagle/water} @tab GNU/Linux @tab BSD 3-Clause
-@item @code{github.com/go-yaml/yaml} @tab All @tab LGPLv3 and MIT
-@item @code{golang.org/x/crypto} @tab All @tab BSD 3-Clause
-@end multitable
+system): @command{uml-utilities} package in most GNU/Linux distributions.
 
 Get @ref{Tarballs, the tarball}, check its
 @ref{Integrity, integrity and authenticity} and run @command{make}.
@@ -43,8 +33,8 @@ binaries will be built in the current directory:
 % make -C govpn-2.3 all
 @end verbatim
 
-There is @code{install} target respecting @env{DESTDIR}. It will
-install binaries, info-documentation and utilities.
+There is @command{install} target respecting @env{DESTDIR}.
+It will install binaries, info-documentation and utilities.
 
 @menu
 * Prepared tarballs: Tarballs.

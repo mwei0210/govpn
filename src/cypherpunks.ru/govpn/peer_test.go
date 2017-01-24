@@ -1,6 +1,6 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ var (
 	testPeer   *Peer
 	testPt     []byte
 	testCt     []byte
-	testPeerId PeerId
+	testPeerID PeerID
 	testConf   *PeerConf
 )
 
@@ -45,9 +45,9 @@ func (d Dummy) Write(b []byte) (int, error) {
 
 func init() {
 	id := new([IDSize]byte)
-	testPeerId = PeerId(*id)
+	testPeerID = PeerID(*id)
 	testConf = &PeerConf{
-		Id:      &testPeerId,
+		ID:      &testPeerID,
 		MTU:     MTUDefault,
 		Timeout: time.Second * time.Duration(TimeoutDefault),
 	}

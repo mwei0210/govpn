@@ -1,6 +1,6 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -34,13 +34,13 @@ const (
 	IDSize = 128 / 8
 )
 
-type PeerId [IDSize]byte
+type PeerID [IDSize]byte
 
-func (id PeerId) String() string {
+func (id PeerID) String() string {
 	return base64.RawStdEncoding.EncodeToString(id[:])
 }
 
-func (id PeerId) MarshalJSON() ([]byte, error) {
+func (id PeerID) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + id.String() + `"`), nil
 }
 
@@ -51,18 +51,18 @@ type MACAndTimeSync struct {
 }
 
 type MACCache struct {
-	cache map[PeerId]*MACAndTimeSync
+	cache map[PeerID]*MACAndTimeSync
 	l     sync.RWMutex
 }
 
 func NewMACCache() *MACCache {
-	return &MACCache{cache: make(map[PeerId]*MACAndTimeSync)}
+	return &MACCache{cache: make(map[PeerID]*MACAndTimeSync)}
 }
 
 // Remove disappeared keys, add missing ones with initialized MACs.
-func (mc *MACCache) Update(peers *map[PeerId]*PeerConf) {
+func (mc *MACCache) Update(peers *map[PeerID]*PeerConf) {
 	mc.l.Lock()
-	for pid, _ := range mc.cache {
+	for pid := range mc.cache {
 		if _, exists := (*peers)[pid]; !exists {
 			log.Println("Cleaning key:", pid)
 			delete(mc.cache, pid)
@@ -101,11 +101,12 @@ func AddTimeSync(ts int, data []byte) {
 // Try to find peer's identity (that equals to MAC)
 // by taking first blocksize sized bytes from data at the beginning
 // as plaintext and last bytes as cyphertext.
-func (mc *MACCache) Find(data []byte) *PeerId {
+func (mc *MACCache) Find(data []byte) *PeerID {
 	if len(data) < 8*2 {
 		return nil
 	}
 	buf := make([]byte, 8)
+	sum := make([]byte, 32)
 	mc.l.RLock()
 	for pid, mt := range mc.cache {
 		copy(buf, data)
@@ -113,10 +114,10 @@ func (mc *MACCache) Find(data []byte) *PeerId {
 		mt.l.Lock()
 		mt.mac.Reset()
 		mt.mac.Write(buf)
-		mt.mac.Sum(buf[:0])
+		mt.mac.Sum(sum[:0])
 		mt.l.Unlock()
-		if subtle.ConstantTimeCompare(buf, data[len(data)-8:]) == 1 {
-			ppid := PeerId(pid)
+		if subtle.ConstantTimeCompare(sum[len(sum)-8:], data[len(data)-8:]) == 1 {
+			ppid := PeerID(pid)
 			mc.l.RUnlock()
 			return &ppid
 		}
