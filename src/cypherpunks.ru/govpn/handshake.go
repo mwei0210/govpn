@@ -146,8 +146,8 @@ func idTag(id *PeerId, timeSync int, data []byte) []byte {
 }
 
 // Start handshake's procedure from the client. It is the entry point
-// for starting the handshake procedure. // First handshake packet
-// will be sent immediately.
+// for starting the handshake procedure.
+// First handshake packet will be sent immediately.
 func HandshakeStart(addr string, conn io.Writer, conf *PeerConf) *Handshake {
 	state := NewHandshake(addr, conn, conf)
 	var dhPubRepr *[32]byte
