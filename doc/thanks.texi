@@ -4,7 +4,8 @@
 Thanks for contributions and suggestions to:
 
 @itemize
-@item Bruce Schneier for his @url{https://www.schneier.com/books/applied_cryptography/, Applied Cryptography}.
 @item Watson Ladd for suggestion of @url{http://elligator.cr.yp.to/, Elligator} encoding.
-@item Zhuoyun Wei for @url{https://aur.archlinux.org/packages/govpn/, AUR} port maintaining and his documentation related fixes.
+@item Zhuoyun Wei for @url{https://aur.archlinux.org/packages/govpn/, AUR} port
+maintaining and his documentation related fixes.
+@item Bruno Clermont for finding serious bugs and code refactoring.
 @end itemize
