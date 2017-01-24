@@ -108,7 +108,7 @@ func main() {
 	conf := client.Configuration{
 		PrivateKey: priv,
 		Peer: &govpn.PeerConf{
-			Id:       verifier.Id,
+			ID:       verifier.ID,
 			Iface:    *ifaceName,
 			MTU:      *mtu,
 			Timeout:  time.Second * time.Duration(*timeoutP),

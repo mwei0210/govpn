@@ -154,7 +154,7 @@ func NewClient(conf Configuration, verifier *govpn.Verifier, termSignal chan os.
 		termSignal:  termSignal,
 		Error:       make(chan error, 1),
 	}
-	confs := map[govpn.PeerId]*govpn.PeerConf{*verifier.Id: conf.Peer}
+	confs := map[govpn.PeerID]*govpn.PeerConf{*verifier.ID: conf.Peer}
 	client.idsCache.Update(&confs)
 	return &client
 }

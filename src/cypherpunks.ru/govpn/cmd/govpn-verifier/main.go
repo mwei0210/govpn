@@ -62,7 +62,7 @@ func main() {
 		if _, err = io.ReadFull(govpn.Rand, id[:]); err != nil {
 			log.Fatalln(err)
 		}
-		pid := govpn.PeerId(*id)
+		pid := govpn.PeerID(*id)
 		v := govpn.VerifierNew(*sOpt, *tOpt, *pOpt, &pid)
 		v.PasswordApply(key)
 		fmt.Println(v.LongForm())

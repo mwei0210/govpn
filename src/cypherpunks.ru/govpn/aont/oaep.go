@@ -48,7 +48,7 @@ const (
 )
 
 var (
-	dummyNonce *[16]byte = new([16]byte)
+	dummyNonce = new([16]byte)
 )
 
 // Encode the data, produce AONT package. Data size will be larger than

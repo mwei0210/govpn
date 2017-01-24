@@ -25,7 +25,7 @@ import (
 )
 
 var (
-	Rand io.Reader = rand.Reader
+	Rand = rand.Reader
 )
 
 type EGDRand string

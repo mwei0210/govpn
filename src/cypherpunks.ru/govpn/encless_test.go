@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	testKey *[32]byte = new([32]byte)
+	testKey = new([32]byte)
 )
 
 func init() {

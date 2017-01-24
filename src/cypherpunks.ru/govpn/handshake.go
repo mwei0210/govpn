@@ -132,7 +132,7 @@ func NewHandshake(addr string, conn io.Writer, conf *PeerConf) *Handshake {
 }
 
 // Generate ID tag from client identification and data.
-func idTag(id *PeerId, timeSync int, data []byte) []byte {
+func idTag(id *PeerID, timeSync int, data []byte) []byte {
 	enc := make([]byte, 8)
 	copy(enc, data)
 	AddTimeSync(timeSync, enc)
@@ -174,7 +174,7 @@ func HandshakeStart(addr string, conn io.Writer, conf *PeerConf) *Handshake {
 		chacha20.XORKeyStream(enc, enc, state.rNonce, state.dsaPubH)
 	}
 	data := append(state.rNonce[8:], enc...)
-	data = append(data, idTag(state.Conf.Id, state.Conf.TimeSync, state.rNonce[8:])...)
+	data = append(data, idTag(state.Conf.ID, state.Conf.TimeSync, state.rNonce[8:])...)
 	state.conn.Write(data)
 	return state
 }
@@ -260,7 +260,7 @@ func (h *Handshake) Server(data []byte) *Peer {
 
 		// Send that to client
 		h.conn.Write(append(encPub, append(
-			encRs, idTag(h.Conf.Id, h.Conf.TimeSync, encPub)...,
+			encRs, idTag(h.Conf.ID, h.Conf.TimeSync, encPub)...,
 		)...))
 		h.LastPing = time.Now()
 	} else
@@ -316,7 +316,7 @@ func (h *Handshake) Server(data []byte) *Peer {
 		} else {
 			chacha20.XORKeyStream(enc, enc, h.rNonceNext(2), h.key)
 		}
-		h.conn.Write(append(enc, idTag(h.Conf.Id, h.Conf.TimeSync, enc)...))
+		h.conn.Write(append(enc, idTag(h.Conf.ID, h.Conf.TimeSync, enc)...))
 
 		// Switch peer
 		peer := newPeer(
@@ -416,7 +416,7 @@ func (h *Handshake) Client(data []byte) *Peer {
 		}
 
 		// Send that to server
-		h.conn.Write(append(enc, idTag(h.Conf.Id, h.Conf.TimeSync, enc)...))
+		h.conn.Write(append(enc, idTag(h.Conf.ID, h.Conf.TimeSync, enc)...))
 		h.LastPing = time.Now()
 	} else
 	// ENC(K, R+2, RC) + IDtag

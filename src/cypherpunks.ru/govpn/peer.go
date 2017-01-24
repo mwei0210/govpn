@@ -88,7 +88,7 @@ type Peer struct {
 
 	// Basic
 	Addr string
-	Id   *PeerId
+	ID   *PeerID
 	Conn io.Writer `json:"-"`
 
 	// Traffic behaviour
@@ -98,7 +98,7 @@ type Peer struct {
 	Encless     bool
 	MTU         int
 
-	key *[SSize]byte `json:"-"`
+	key *[SSize]byte
 
 	// Timers
 	Timeout     time.Duration `json:"-"`
@@ -135,7 +135,7 @@ type Peer struct {
 }
 
 func (p *Peer) String() string {
-	return p.Id.String() + ":" + p.Addr
+	return p.ID.String() + ":" + p.Addr
 }
 
 // Zero peer's memory state.
@@ -185,7 +185,7 @@ func newPeer(isClient bool, addr string, conn io.Writer, conf *PeerConf, key *[S
 
 	peer := Peer{
 		Addr: addr,
-		Id:   conf.Id,
+		ID:   conf.ID,
 		Conn: conn,
 
 		NoiseEnable: noiseEnable,

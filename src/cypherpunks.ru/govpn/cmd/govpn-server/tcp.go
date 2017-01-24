@@ -71,16 +71,16 @@ func handleTCP(conn net.Conn) {
 			break
 		}
 		prev += n
-		peerId := idsCache.Find(buf[:prev])
-		if peerId == nil {
+		peerID := idsCache.Find(buf[:prev])
+		if peerID == nil {
 			continue
 		}
 		if hs == nil {
-			conf = confs[*peerId]
+			conf = confs[*peerID]
 			if conf == nil {
 				govpn.Printf(
 					`[conf-get-failed bind="%s" peer="%s"]`,
-					*bindAddr, peerId.String(),
+					*bindAddr, peerID.String(),
 				)
 				break
 			}
@@ -94,11 +94,11 @@ func handleTCP(conn net.Conn) {
 		hs.Zero()
 		govpn.Printf(
 			`[handshake-completed bind="%s" addr="%s" peer="%s"]`,
-			*bindAddr, addr, peerId.String(),
+			*bindAddr, addr, peerID.String(),
 		)
-		peersByIdLock.RLock()
-		addrPrev, exists := peersById[*peer.Id]
-		peersByIdLock.RUnlock()
+		peersByIDLock.RLock()
+		addrPrev, exists := peersByID[*peer.ID]
+		peersByIDLock.RUnlock()
 		if exists {
 			peersLock.Lock()
 			peers[addrPrev].terminator <- struct{}{}
@@ -109,22 +109,22 @@ func handleTCP(conn net.Conn) {
 				terminator: make(chan struct{}),
 			}
 			go govpn.PeerTapProcessor(ps.peer, ps.tap, ps.terminator)
-			peersByIdLock.Lock()
+			peersByIDLock.Lock()
 			kpLock.Lock()
 			delete(peers, addrPrev)
 			delete(knownPeers, addrPrev)
 			peers[addr] = ps
 			knownPeers[addr] = &peer
-			peersById[*peer.Id] = addr
+			peersByID[*peer.ID] = addr
 			peersLock.Unlock()
-			peersByIdLock.Unlock()
+			peersByIDLock.Unlock()
 			kpLock.Unlock()
 			govpn.Printf(
 				`[rehandshake-completed bind="%s" peer="%s"]`,
-				*bindAddr, peerId.String(),
+				*bindAddr, peerID.String(),
 			)
 		} else {
-			ifaceName, err := callUp(peer.Id, peer.Addr)
+			ifaceName, err := callUp(peer.ID, peer.Addr)
 			if err != nil {
 				peer = nil
 				break
@@ -133,7 +133,7 @@ func handleTCP(conn net.Conn) {
 			if err != nil {
 				govpn.Printf(
 					`[tap-failed bind="%s" peer="%s" err="%s"]`,
-					*bindAddr, peerId.String(), err,
+					*bindAddr, peerID.String(), err,
 				)
 				peer = nil
 				break
@@ -145,15 +145,15 @@ func handleTCP(conn net.Conn) {
 			}
 			go govpn.PeerTapProcessor(ps.peer, ps.tap, ps.terminator)
 			peersLock.Lock()
-			peersByIdLock.Lock()
+			peersByIDLock.Lock()
 			kpLock.Lock()
 			peers[addr] = ps
-			peersById[*peer.Id] = addr
+			peersByID[*peer.ID] = addr
 			knownPeers[addr] = &peer
 			peersLock.Unlock()
-			peersByIdLock.Unlock()
+			peersByIDLock.Unlock()
 			kpLock.Unlock()
-			govpn.Printf(`[peer-created bind="%s" peer="%s"]`, *bindAddr, peerId.String())
+			govpn.Printf(`[peer-created bind="%s" peer="%s"]`, *bindAddr, peerID.String())
 		}
 		break
 	}
@@ -188,7 +188,7 @@ func handleTCP(conn net.Conn) {
 		if !peer.PktProcess(buf[:i+govpn.NonceSize], tap, false) {
 			govpn.Printf(
 				`[packet-unauthenticated bind="%s" addr="%s" peer="%s"]`,
-				*bindAddr, addr, peer.Id.String(),
+				*bindAddr, addr, peer.ID.String(),
 			)
 			break
 		}

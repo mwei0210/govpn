@@ -36,7 +36,7 @@ func (c UDPSender) Write(data []byte) (int, error) {
 
 var (
 	// Buffers for UDP parallel processing
-	udpBufs chan []byte = make(chan []byte, 1<<8)
+	udpBufs = make(chan []byte, 1<<8)
 )
 
 func startUDP() {
@@ -61,7 +61,7 @@ func startUDP() {
 		var hs *govpn.Handshake
 		var addrPrev string
 		var exists bool
-		var peerId *govpn.PeerId
+		var peerID *govpn.PeerID
 		var conf *govpn.PeerConf
 		for {
 			buf = <-udpBufs
@@ -87,17 +87,17 @@ func startUDP() {
 			hs, exists = handshakes[addr]
 			hsLock.RUnlock()
 			if !exists {
-				peerId = idsCache.Find(buf[:n])
-				if peerId == nil {
+				peerID = idsCache.Find(buf[:n])
+				if peerID == nil {
 					govpn.Printf(`[identity-unknown bind="%s" addr="%s"]`, *bindAddr, addr)
 					udpBufs <- buf
 					continue
 				}
-				conf = confs[*peerId]
+				conf = confs[*peerID]
 				if conf == nil {
 					govpn.Printf(
 						`[conf-get-failed bind="%s" peer="%s"]`,
-						*bindAddr, peerId.String(),
+						*bindAddr, peerID.String(),
 					)
 					udpBufs <- buf
 					continue
@@ -122,7 +122,7 @@ func startUDP() {
 			}
 			govpn.Printf(
 				`[handshake-completed bind="%s" addr="%s" peer="%s"]`,
-				*bindAddr, addr, peerId.String(),
+				*bindAddr, addr, peerID.String(),
 			)
 			hs.Zero()
 			hsLock.Lock()
@@ -133,13 +133,13 @@ func startUDP() {
 				udpBufs <- make([]byte, govpn.MTUMax)
 				udpBufs <- make([]byte, govpn.MTUMax)
 			}()
-			peersByIdLock.RLock()
-			addrPrev, exists = peersById[*peer.Id]
-			peersByIdLock.RUnlock()
+			peersByIDLock.RLock()
+			addrPrev, exists = peersByID[*peer.ID]
+			peersByIDLock.RUnlock()
 			if exists {
 				peersLock.Lock()
 				peers[addrPrev].terminator <- struct{}{}
-				ps := &PeerState{
+				psNew := &PeerState{
 					peer:       peer,
 					tap:        peers[addrPrev].tap,
 					terminator: make(chan struct{}),
@@ -148,24 +148,24 @@ func startUDP() {
 					govpn.PeerTapProcessor(peer, tap, terminator)
 					<-udpBufs
 					<-udpBufs
-				}(ps.peer, ps.tap, ps.terminator)
-				peersByIdLock.Lock()
+				}(psNew.peer, psNew.tap, psNew.terminator)
+				peersByIDLock.Lock()
 				kpLock.Lock()
 				delete(peers, addrPrev)
 				delete(knownPeers, addrPrev)
-				peers[addr] = ps
+				peers[addr] = psNew
 				knownPeers[addr] = &peer
-				peersById[*peer.Id] = addr
+				peersByID[*peer.ID] = addr
 				peersLock.Unlock()
-				peersByIdLock.Unlock()
+				peersByIDLock.Unlock()
 				kpLock.Unlock()
 				govpn.Printf(
 					`[rehandshake-completed bind="%s" peer="%s"]`,
-					*bindAddr, peer.Id.String(),
+					*bindAddr, peer.ID.String(),
 				)
 			} else {
 				go func(addr string, peer *govpn.Peer) {
-					ifaceName, err := callUp(peer.Id, peer.Addr)
+					ifaceName, err := callUp(peer.ID, peer.Addr)
 					if err != nil {
 						return
 					}
@@ -173,11 +173,11 @@ func startUDP() {
 					if err != nil {
 						govpn.Printf(
 							`[tap-failed bind="%s" peer="%s" err="%s"]`,
-							*bindAddr, peer.Id.String(), err,
+							*bindAddr, peer.ID.String(), err,
 						)
 						return
 					}
-					ps := &PeerState{
+					psNew := &PeerState{
 						peer:       peer,
 						tap:        tap,
 						terminator: make(chan struct{}),
@@ -186,17 +186,17 @@ func startUDP() {
 						govpn.PeerTapProcessor(peer, tap, terminator)
 						<-udpBufs
 						<-udpBufs
-					}(ps.peer, ps.tap, ps.terminator)
+					}(psNew.peer, psNew.tap, psNew.terminator)
 					peersLock.Lock()
-					peersByIdLock.Lock()
+					peersByIDLock.Lock()
 					kpLock.Lock()
-					peers[addr] = ps
+					peers[addr] = psNew
 					knownPeers[addr] = &peer
-					peersById[*peer.Id] = addr
+					peersByID[*peer.ID] = addr
 					peersLock.Unlock()
-					peersByIdLock.Unlock()
+					peersByIDLock.Unlock()
 					kpLock.Unlock()
-					govpn.Printf(`[peer-created bind="%s" peer="%s"]`, *bindAddr, peer.Id.String())
+					govpn.Printf(`[peer-created bind="%s" peer="%s"]`, *bindAddr, peer.ID.String())
 				}(addr, peer)
 			}
 			udpBufs <- buf

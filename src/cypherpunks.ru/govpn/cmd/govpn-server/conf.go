@@ -34,11 +34,11 @@ const (
 )
 
 var (
-	confs    map[govpn.PeerId]*govpn.PeerConf
+	confs    map[govpn.PeerID]*govpn.PeerConf
 	idsCache *govpn.MACCache
 )
 
-func confRead() (*map[govpn.PeerId]*govpn.PeerConf, error) {
+func confRead() (*map[govpn.PeerID]*govpn.PeerConf, error) {
 	data, err := ioutil.ReadFile(*confPath)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func confRead() (*map[govpn.PeerId]*govpn.PeerConf, error) {
 		return nil, err
 	}
 
-	confs := make(map[govpn.PeerId]*govpn.PeerConf, len(*confsRaw))
+	confs := make(map[govpn.PeerID]*govpn.PeerConf, len(*confsRaw))
 	for name, pc := range *confsRaw {
 		verifier, err := govpn.VerifierFromString(pc.VerifierRaw)
 		if err != nil {
@@ -67,7 +67,7 @@ func confRead() (*map[govpn.PeerId]*govpn.PeerConf, error) {
 		}
 		conf := govpn.PeerConf{
 			Verifier: verifier,
-			Id:       verifier.Id,
+			ID:       verifier.ID,
 			Name:     name,
 			Iface:    pc.Iface,
 			MTU:      pc.MTU,
@@ -82,7 +82,7 @@ func confRead() (*map[govpn.PeerId]*govpn.PeerConf, error) {
 			pc.TimeoutInt = govpn.TimeoutDefault
 		}
 		conf.Timeout = time.Second * time.Duration(pc.TimeoutInt)
-		confs[*verifier.Id] = &conf
+		confs[*verifier.ID] = &conf
 	}
 	return &confs, nil
 }

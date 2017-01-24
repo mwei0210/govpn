@@ -25,7 +25,7 @@ import (
 )
 
 type PeerConf struct {
-	Id          *PeerId       `yaml:"-"`
+	ID          *PeerID       `yaml:"-"`
 	Name        string        `yaml:"name"`
 	Iface       string        `yaml:"iface"`
 	MTU         int           `yaml:"mtu"`

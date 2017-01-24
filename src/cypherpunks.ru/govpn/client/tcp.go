@@ -76,8 +76,8 @@ HandshakeCycle:
 		}
 
 		prev += n
-		peerId := c.idsCache.Find(buf[:prev])
-		if peerId == nil {
+		peerID := c.idsCache.Find(buf[:prev])
+		if peerID == nil {
 			continue
 		}
 		peer = hs.Client(buf[:prev])
