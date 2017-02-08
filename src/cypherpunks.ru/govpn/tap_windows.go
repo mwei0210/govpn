@@ -1,6 +1,6 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,30 +27,9 @@ import (
 )
 
 func newTAPer(ifaceName *string) (io.ReadWriteCloser, error) {
-	config := water.Config{}
-
-	if len(*ifaceName) == 0 {
-		return nil, errors.New("Can't figure interface type, empty name")
+	if strings.HasPrefix(*ifaceName, interfaceTun) {
+		return nil, errors.Wrap(errUnsupportedInterface, *ifaceName)
 	}
-
-	if strings.HasPrefix(*ifaceName, interfaceTap) {
-		config.DeviceType = water.TAP
-		if len(*ifaceName) > len(interfaceTap) {
-			config.Name = *ifaceName
-		}
-	} else if strings.HasPrefix(*ifaceName, interfaceTun) {
-		config.DeviceType = water.TUN
-		if len(*ifaceName) > len(interfaceTun) {
-			config.Name = *ifaceName
-		}
-	} else {
-		return nil, errors.Errorf("Unrecognized interface name %q", *ifaceName)
-	}
-
-	output, err := water.New(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "water.New")
-	}
-	*ifaceName = output.Name()
-	return output, nil
+	output, err := water.NewTAP(*ifaceName)
+	return output, errors.Wrap(err, "water.NewTAP")
 }
