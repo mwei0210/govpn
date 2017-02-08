@@ -13,6 +13,8 @@ Tarballs include all necessary required libraries:
 @item @code{github.com/songgao/water} @tab GNU/Linux @tab BSD 3-Clause
 @item @code{github.com/go-yaml/yaml} @tab All @tab Apache License 2.0 and MIT
 @item @code{golang.org/x/crypto} @tab All @tab BSD 3-Clause
+@item @code{github.com/pkg/errors} @tab All @tab BSD 2-Clause
+@item @code{github.com/sirupsen/logrus} @tab All @tab MIT
 @end multitable
 
 @multitable {XXXXX} {XXXX KiB} {link sign} {xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx}

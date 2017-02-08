@@ -14,3 +14,9 @@
 	path = src/gopkg.in/yaml.v2
 	url = https://github.com/go-yaml/yaml.git
 	branch = v2
+[submodule "github.com/pkg/errors"]
+    path = src/github.com/pkg/errors
+	url = https://github.com/pkg/errors.git
+[submodule "github.com/sirupsen/logrus"]
+    path = src/github.com/sirupsen/logrus
+    url = https://github.com/sirupsen/logrus.git
