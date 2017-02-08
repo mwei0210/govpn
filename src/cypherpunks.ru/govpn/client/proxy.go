@@ -21,9 +21,10 @@ package client
 import (
 	"bufio"
 	"encoding/base64"
-	"fmt"
 	"net"
 	"net/http"
+
+	"github.com/pkg/errors"
 
 	"cypherpunks.ru/govpn"
 )
@@ -31,12 +32,12 @@ import (
 func (c *Client) proxyTCP() {
 	proxyAddr, err := net.ResolveTCPAddr("tcp", c.config.ProxyAddress)
 	if err != nil {
-		c.Error <- err
+		c.Error <- errors.Wrapf(err, "net.ResolveTCPAddr %s", c.config.ProxyAddress)
 		return
 	}
 	conn, err := net.DialTCP("tcp", nil, proxyAddr)
 	if err != nil {
-		c.Error <- err
+		c.Error <- errors.Wrapf(err, "net.DialTCP %s", proxyAddr.String())
 		return
 	}
 	req := "CONNECT " + c.config.ProxyAddress + " HTTP/1.1\n"
@@ -46,15 +47,25 @@ func (c *Client) proxyTCP() {
 		req += base64.StdEncoding.EncodeToString([]byte(c.config.ProxyAuthentication)) + "\n"
 	}
 	req += "\n"
-	conn.Write([]byte(req))
+	if _, err = conn.Write([]byte(req)); err != nil {
+		govpn.CloseLog(conn, c.logger, c.LogFields())
+		c.Error <- errors.Wrap(err, "conn.Write")
+		return
+	}
 	resp, err := http.ReadResponse(
 		bufio.NewReader(conn),
 		&http.Request{Method: "CONNECT"},
 	)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		c.Error <- fmt.Errorf("Unexpected response from proxy: %s", err.Error())
+	if err != nil {
+		govpn.CloseLog(conn, c.logger, c.LogFields())
+		c.Error <- errors.Wrap(err, "http.ReadResponse CONNECT")
 		return
 	}
-	govpn.Printf(`[proxy-connected remote="%s" addr="%s"]`, c.config.RemoteAddress, *proxyAddr)
+	if resp.StatusCode != http.StatusOK {
+		govpn.CloseLog(conn, c.logger, c.LogFields())
+		c.Error <- errors.Errorf("Unexpected response from proxy: %s", http.StatusText(resp.StatusCode))
+		return
+	}
+	c.logger.WithField("func", logFuncPrefix+"Client.proxyTCP").WithFields(c.config.LogFields()).Debug("Proxy connected")
 	go c.handleTCP(conn)
 }
