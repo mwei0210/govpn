@@ -28,6 +28,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"syscall"
 
 	"cypherpunks.ru/balloon"
 	"github.com/agl/ed25519"
@@ -138,7 +139,7 @@ func KeyRead(path string) (string, error) {
 	var pass string
 	if path == "" {
 		os.Stderr.Write([]byte("Passphrase:"))
-		p, err = terminal.ReadPassword(0)
+		p, err = terminal.ReadPassword(int(uintptr(syscall.Stdin)))
 		os.Stderr.Write([]byte("\n"))
 		pass = string(p)
 	} else {
