@@ -379,7 +379,8 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 		return false
 	}
 	var out []byte
-	p.BusyR.Lock() // TODO use defer to unlock?
+	p.BusyR.Lock()
+	defer p.BusyR.Unlock()
 	copy(p.nonceR[8:], data[len(data)-NonceSize:])
 	if p.Encless {
 		var err error
@@ -389,7 +390,6 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 				p.LogFields(),
 			).WithError(err).Debug("Failed to decode encless")
 			p.FramesUnauth++
-			p.BusyR.Unlock()
 			return false
 		}
 	} else {
@@ -407,7 +407,6 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 		copy(p.tagR[:], data[:tagSize])
 		if !poly1305.Verify(p.tagR, data[tagSize:], p.keyAuthR) {
 			p.FramesUnauth++
-			p.BusyR.Unlock()
 			return false
 		}
 		out = p.bufR[CC20IBS : CC20IBS+len(data)-tagSize-NonceSize]
@@ -422,7 +421,6 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 		// or too new (many packets were lost)
 		if !(foundL || foundM || foundH) {
 			p.FramesDup++
-			p.BusyR.Unlock()
 			return false
 		}
 		// Delete seen nonce
@@ -448,7 +446,6 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 	} else {
 		if subtle.ConstantTimeCompare(data[len(data)-NonceSize:], p.NonceExpect) != 1 {
 			p.FramesDup++
-			p.BusyR.Unlock()
 			return false
 		}
 		copy(p.NonceExpect, (<-p.noncesExpect)[:])
@@ -459,25 +456,21 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 	p.LastPing = time.Now()
 	p.pktSizeR = bytes.LastIndexByte(out, padByte)
 	if p.pktSizeR == -1 {
-		p.BusyR.Unlock()
 		return false
 	}
 	// Validate the pad
 	for i := p.pktSizeR + 1; i < len(out); i++ {
 		if out[i] != 0 {
-			p.BusyR.Unlock()
 			return false
 		}
 	}
 
 	if p.pktSizeR == 0 {
 		p.HeartbeatRecv++
-		p.BusyR.Unlock()
 		return true
 	}
 	p.BytesPayloadIn += uint64(p.pktSizeR)
 	tap.Write(out[:p.pktSizeR])
-	p.BusyR.Unlock()
 	return true
 }
 
