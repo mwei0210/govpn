@@ -1,6 +1,6 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,13 +22,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
-	"net"
-	"os"
-	"os/signal"
-	"time"
+
+	"github.com/Sirupsen/logrus"
 
 	"cypherpunks.ru/govpn"
+	"cypherpunks.ru/govpn/server"
 )
 
 var (
@@ -41,9 +39,13 @@ var (
 	syslog   = flag.Bool("syslog", false, "Enable logging to syslog")
 	version  = flag.Bool("version", false, "Print version information")
 	warranty = flag.Bool("warranty", false, "Print warranty information")
+	logLevel = flag.String("log_level", "warning", "Log level")
 )
 
 func main() {
+	var err error
+	fields := logrus.Fields{"func": "main"}
+
 	flag.Parse()
 	if *warranty {
 		fmt.Println(govpn.Warranty)
@@ -53,101 +55,40 @@ func main() {
 		fmt.Println(govpn.VersionGet())
 		return
 	}
-	timeout := time.Second * time.Duration(govpn.TimeoutDefault)
-	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Lshortfile)
-	log.Println(govpn.VersionGet())
 
-	confInit()
-	knownPeers = govpn.KnownPeers(make(map[string]**govpn.Peer))
+	logger, err = govpn.NewLogger(*logLevel, *syslog)
+	if err != nil {
+		logrus.WithFields(fields).WithError(err).Fatal("Couldn't initialize logging")
+	}
+	govpn.SetLogger(logger)
 
 	if *egdPath != "" {
-		log.Println("Using", *egdPath, "EGD")
+		logger.WithField("egd_path", *egdPath).WithFields(fields).Debug("Init EGD")
 		govpn.EGDInit(*egdPath)
 	}
 
-	if *syslog {
-		govpn.SyslogEnable()
+	confInit()
+
+	serverConfig := server.Configuration{
+		BindAddress:  *bindAddr,
+		ProxyAddress: *proxy,
+		Timeout:      govpn.TimeoutDefault,
+	}
+	if serverConfig.Protocol, err = govpn.NewProtocolFromString(*proto); err != nil {
+		logger.WithError(err).WithFields(fields).WithField("proto", *proto).Fatal("Invalid protocol")
+	}
+	if err = serverConfig.Validate(); err != nil {
+		logger.WithError(err).WithFields(fields).Fatal("Invalid configuration")
 	}
 
-	switch *proto {
-	case "udp":
-		startUDP()
-	case "tcp":
-		startTCP()
-	case "all":
-		startUDP()
-		startTCP()
-	default:
-		log.Fatalln("Unknown protocol specified")
-	}
-
-	termSignal := make(chan os.Signal, 1)
-	signal.Notify(termSignal, os.Interrupt, os.Kill)
-
-	hsHeartbeat := time.Tick(timeout)
-	go func() { <-hsHeartbeat }()
+	srv := server.NewServer(serverConfig, confs, idsCache, logger, govpn.CatchSignalShutdown())
 
 	if *stats != "" {
-		log.Println("Stats are going to listen on", *stats)
-		statsPort, err := net.Listen("tcp", *stats)
-		if err != nil {
-			log.Fatalln("Can not listen on stats port:", err)
-		}
-		go govpn.StatsProcessor(statsPort, &knownPeers)
+		go govpn.StatsProcessor(*stats, srv.KnownPeers())
 	}
-	if *proxy != "" {
-		go proxyStart()
-	}
-	govpn.BothPrintf(`[started bind="%s"]`, *bindAddr)
 
-	var needsDeletion bool
-MainCycle:
-	for {
-		select {
-		case <-termSignal:
-			govpn.BothPrintf(`[terminating bind="%s"]`, *bindAddr)
-			for _, ps := range peers {
-				govpn.ScriptCall(
-					confs[*ps.peer.ID].Down,
-					ps.tap.Name,
-					ps.peer.Addr,
-				)
-			}
-			break MainCycle
-		case <-hsHeartbeat:
-			now := time.Now()
-			hsLock.Lock()
-			for addr, hs := range handshakes {
-				if hs.LastPing.Add(timeout).Before(now) {
-					govpn.Printf(`[handshake-delete bind="%s" addr="%s"]`, *bindAddr, addr)
-					hs.Zero()
-					delete(handshakes, addr)
-				}
-			}
-			peersLock.Lock()
-			peersByIDLock.Lock()
-			kpLock.Lock()
-			for addr, ps := range peers {
-				ps.peer.BusyR.Lock()
-				needsDeletion = ps.peer.LastPing.Add(timeout).Before(now)
-				ps.peer.BusyR.Unlock()
-				if needsDeletion {
-					govpn.Printf(`[peer-delete bind="%s" peer="%s"]`, *bindAddr, ps.peer)
-					delete(peers, addr)
-					delete(knownPeers, addr)
-					delete(peersByID, *ps.peer.ID)
-					go govpn.ScriptCall(
-						confs[*ps.peer.ID].Down,
-						ps.tap.Name,
-						ps.peer.Addr,
-					)
-					ps.terminator <- struct{}{}
-				}
-			}
-			hsLock.Unlock()
-			peersLock.Unlock()
-			peersByIDLock.Unlock()
-			kpLock.Unlock()
-		}
+	go srv.MainCycle()
+	if err = <-srv.Error; err != nil {
+		logger.WithError(err).Fatal("Fatal error")
 	}
 }

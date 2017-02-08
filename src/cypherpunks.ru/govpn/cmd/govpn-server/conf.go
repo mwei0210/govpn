@@ -19,41 +19,64 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package main
 
 import (
-	"errors"
 	"io/ioutil"
-	"log"
 	"time"
 
+	"github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 
 	"cypherpunks.ru/govpn"
 )
 
-const (
-	RefreshRate = time.Minute
-)
+const refreshRate = time.Minute
 
 var (
-	confs    map[govpn.PeerID]*govpn.PeerConf
+	confs    peerConfigurations
 	idsCache *govpn.MACCache
+	logger   *logrus.Logger
 )
+
+type peerConfigurations map[govpn.PeerID]*govpn.PeerConf
+
+func (peerConfs peerConfigurations) Get(peerID govpn.PeerID) *govpn.PeerConf {
+	pc, exists := peerConfs[peerID]
+	if !exists {
+		return nil
+	}
+	return pc
+}
+
+type peerConf struct {
+	Name        string `yaml:"name"`
+	Iface       string `yaml:"iface"`
+	MTU         int    `yaml:"mtu"`
+	Up          string `yaml:"up"`
+	Down        string `yaml:"down"`
+	TimeoutInt  int    `yaml:"timeout"`
+	Noise       bool   `yaml:"noise"`
+	CPR         int    `yaml:"cpr"`
+	Encless     bool   `yaml:"encless"`
+	TimeSync    int    `yaml:"timesync"`
+	VerifierRaw string `yaml:"verifier"`
+}
 
 func confRead() (*map[govpn.PeerID]*govpn.PeerConf, error) {
 	data, err := ioutil.ReadFile(*confPath)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "ioutil.ReadFile")
 	}
-	confsRaw := new(map[string]govpn.PeerConf)
+	confsRaw := new(map[string]peerConf)
 	err = yaml.Unmarshal(data, confsRaw)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "yaml.Unmarshal")
 	}
 
 	confs := make(map[govpn.PeerID]*govpn.PeerConf, len(*confsRaw))
 	for name, pc := range *confsRaw {
 		verifier, err := govpn.VerifierFromString(pc.VerifierRaw)
 		if err != nil {
-			return nil, errors.New("Unable to decode verifier: " + err.Error())
+			return nil, errors.Wrap(err, "govpn.VerifierFromString")
 		}
 		if pc.Encless {
 			pc.Noise = true
@@ -62,7 +85,11 @@ func confRead() (*map[govpn.PeerID]*govpn.PeerConf, error) {
 			pc.MTU = govpn.MTUDefault
 		}
 		if pc.MTU > govpn.MTUMax {
-			govpn.Printf(`[mtu-high bind="%s" value="%d" overriden="%d"]`, *bindAddr, pc.MTU, govpn.MTUMax)
+			logger.WithFields(logrus.Fields{
+				"bind":         *bindAddr,
+				"previous_mtu": pc.MTU,
+				"new_mtu":      govpn.MTUMax,
+			}).Warning("Overriden MTU")
 			pc.MTU = govpn.MTUMax
 		}
 		conf := govpn.PeerConf{
@@ -71,42 +98,54 @@ func confRead() (*map[govpn.PeerID]*govpn.PeerConf, error) {
 			Name:     name,
 			Iface:    pc.Iface,
 			MTU:      pc.MTU,
-			Up:       pc.Up,
-			Down:     pc.Down,
+			PreUp:    preUpAction(pc.Up),
+			Down:     govpn.RunScriptAction(&pc.Down),
 			Noise:    pc.Noise,
 			CPR:      pc.CPR,
 			Encless:  pc.Encless,
 			TimeSync: pc.TimeSync,
 		}
 		if pc.TimeoutInt <= 0 {
-			pc.TimeoutInt = govpn.TimeoutDefault
+			conf.Timeout = govpn.TimeoutDefault
+		} else {
+			conf.Timeout = time.Second * time.Duration(pc.TimeoutInt)
 		}
-		conf.Timeout = time.Second * time.Duration(pc.TimeoutInt)
 		confs[*verifier.ID] = &conf
 	}
 	return &confs, nil
 }
 
 func confRefresh() error {
+	fields := logrus.Fields{
+		"func": "confRefresh",
+	}
+	logger.WithFields(fields).Debug("Check configuration file")
 	newConfs, err := confRead()
 	if err != nil {
-		govpn.Printf(`[conf-parse-failed bind="%s" err="%s"]`, *bindAddr, err)
-		return err
+		return errors.Wrap(err, "confRead")
 	}
 	confs = *newConfs
-	idsCache.Update(newConfs)
+	logger.WithFields(fields).WithField("newConfs", len(confs)).Debug("idsCache.Update")
+	if err = idsCache.Update(newConfs); err != nil {
+		return errors.Wrap(err, "idsCache.Update")
+	}
+	logger.WithFields(fields).Debug("Done")
 	return nil
 }
 
 func confInit() {
 	idsCache = govpn.NewMACCache()
-	if err := confRefresh(); err != nil {
-		log.Fatalln(err)
+	err := confRefresh()
+	fields := logrus.Fields{"func": "confInit"}
+	if err != nil {
+		logger.WithError(err).WithFields(fields).Fatal("Couldn't perform initial configuration read")
 	}
 	go func() {
 		for {
-			time.Sleep(RefreshRate)
-			confRefresh()
+			time.Sleep(refreshRate)
+			if err = confRefresh(); err != nil {
+				logger.WithError(err).WithFields(fields).Error("Couldn't refresh configuration")
+			}
 		}
 	}()
 }
