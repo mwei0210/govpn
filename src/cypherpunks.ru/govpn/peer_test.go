@@ -1,6 +1,6 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@ package govpn
 import (
 	"testing"
 	"testing/quick"
-	"time"
 )
 
 var (
@@ -49,23 +48,32 @@ func init() {
 	testConf = &PeerConf{
 		ID:      &testPeerID,
 		MTU:     MTUDefault,
-		Timeout: time.Second * time.Duration(TimeoutDefault),
+		Timeout: TimeoutDefault,
 	}
 	testPt = make([]byte, 789)
 }
 
-func testPeerNew() {
-	testPeer = newPeer(true, "foo", Dummy{&testCt}, testConf, new([SSize]byte))
+func testPeerNew(t *testing.T) {
+	var err error
+	testPeer, err = newPeer(true, "foo", Dummy{&testCt}, testConf, new([SSize]byte))
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func TestTransportSymmetric(t *testing.T) {
-	testPeerNew()
-	peerd := newPeer(false, "foo", Dummy{nil}, testConf, new([SSize]byte))
+	testPeerNew(t)
+	peerd, err := newPeer(false, "foo", Dummy{nil}, testConf, new([SSize]byte))
+	if err != nil {
+		t.Error(err)
+	}
 	f := func(payload []byte) bool {
 		if len(payload) == 0 {
 			return true
 		}
-		testPeer.EthProcess(payload)
+		if err := testPeer.EthProcess(payload); err != nil {
+			t.Error(err)
+		}
 		return peerd.PktProcess(testCt, Dummy{nil}, true)
 	}
 	if err := quick.Check(f, nil); err != nil {
@@ -74,15 +82,20 @@ func TestTransportSymmetric(t *testing.T) {
 }
 
 func TestTransportSymmetricNoise(t *testing.T) {
-	testPeerNew()
-	peerd := newPeer(false, "foo", Dummy{nil}, testConf, new([SSize]byte))
+	testPeerNew(t)
+	peerd, err := newPeer(false, "foo", Dummy{nil}, testConf, new([SSize]byte))
+	if err != nil {
+		t.Error(err)
+	}
 	testPeer.NoiseEnable = true
 	peerd.NoiseEnable = true
 	f := func(payload []byte) bool {
 		if len(payload) == 0 {
 			return true
 		}
-		testPeer.EthProcess(payload)
+		if err := testPeer.EthProcess(payload); err != nil {
+			t.Error(err)
+		}
 		return peerd.PktProcess(testCt, Dummy{nil}, true)
 	}
 	if err := quick.Check(f, nil); err != nil {
@@ -92,8 +105,11 @@ func TestTransportSymmetricNoise(t *testing.T) {
 }
 
 func TestTransportSymmetricEncless(t *testing.T) {
-	testPeerNew()
-	peerd := newPeer(false, "foo", Dummy{nil}, testConf, new([SSize]byte))
+	testPeerNew(t)
+	peerd, err := newPeer(false, "foo", Dummy{nil}, testConf, new([SSize]byte))
+	if err != nil {
+		t.Error(err)
+	}
 	testPeer.Encless = true
 	testPeer.NoiseEnable = true
 	peerd.Encless = true
@@ -102,7 +118,9 @@ func TestTransportSymmetricEncless(t *testing.T) {
 		if len(payload) == 0 {
 			return true
 		}
-		testPeer.EthProcess(payload)
+		if err := testPeer.EthProcess(payload); err != nil {
+			t.Error(err)
+		}
 		return peerd.PktProcess(testCt, Dummy{nil}, true)
 	}
 	if err := quick.Check(f, nil); err != nil {
@@ -113,15 +131,27 @@ func TestTransportSymmetricEncless(t *testing.T) {
 }
 
 func BenchmarkEnc(b *testing.B) {
+	var err error
 	for i := 0; i < b.N; i++ {
-		testPeer.EthProcess(testPt)
+		if err = testPeer.EthProcess(testPt); err != nil {
+			b.Error(err)
+		}
 	}
 }
 
 func BenchmarkDec(b *testing.B) {
-	testPeer = newPeer(true, "foo", Dummy{&testCt}, testConf, new([SSize]byte))
-	testPeer.EthProcess(testPt)
-	testPeer = newPeer(true, "foo", Dummy{nil}, testConf, new([SSize]byte))
+	var err error
+	testPeer, err = newPeer(true, "foo", Dummy{&testCt}, testConf, new([SSize]byte))
+	if err != nil {
+		b.Error(err)
+	}
+	if err := testPeer.EthProcess(testPt); err != nil {
+		b.Error(err)
+	}
+	testPeer, err = newPeer(true, "foo", Dummy{nil}, testConf, new([SSize]byte))
+	if err != nil {
+		b.Error(err)
+	}
 	orig := make([]byte, len(testCt))
 	copy(orig, testCt)
 	nonce := new([NonceSize]byte)
