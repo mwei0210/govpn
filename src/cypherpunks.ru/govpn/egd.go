@@ -1,6 +1,6 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,6 +22,9 @@ import (
 	"crypto/rand"
 	"io"
 	"net"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 )
 
 // Rand is a source of entropy
@@ -34,11 +37,17 @@ type EGDRand string
 func (egdPath EGDRand) Read(b []byte) (int, error) {
 	conn, err := net.Dial("unix", string(egdPath))
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrapf(err, "net.Dial unix:%q", string(egdPath))
 	}
-	defer conn.Close()
-	conn.Write([]byte{0x02, byte(len(b))})
-	return io.ReadFull(conn, b)
+	defer CloseLog(conn, logger, logrus.Fields{"func": logFuncPrefix + "EGDRand.Read"})
+	n, err := conn.Write([]byte{0x02, byte(len(b))})
+	if err != nil {
+		return 0, errors.Wrapf(err, "conn.Write unix:%q", string(egdPath))
+	}
+	if n, err = io.ReadFull(conn, b); err != nil {
+		return 0, errors.Wrapf(err, wrapIoReadFull, string(egdPath))
+	}
+	return n, nil
 }
 
 // EGDInit set random source to a EGD socket

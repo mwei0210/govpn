@@ -1,6 +1,6 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,14 +20,13 @@ package govpn
 
 import (
 	"encoding/json"
-	"log"
 	"net"
 	"time"
+
+	"github.com/Sirupsen/logrus"
 )
 
-const (
-	RWTimeout = 10 * time.Second
-)
+const rwTimeout = 10 * time.Second
 
 // KnownPeers map of all connected GoVPN peers
 type KnownPeers map[string]**Peer
@@ -38,29 +37,46 @@ type KnownPeers map[string]**Peer
 // argument is a reference to the map with references to the peers as
 // values. Map is used here because of ease of adding and removing
 // elements in it.
-func StatsProcessor(statsPort net.Listener, peers *KnownPeers) {
+func StatsProcessor(stats string, peers *KnownPeers) {
 	var conn net.Conn
-	var err error
-	var data []byte
 	buf := make([]byte, 2<<8)
+	fields := logrus.Fields{
+		"func":    logFuncPrefix + "StatsProcessor",
+		"bufsize": len(buf),
+		"port":    stats,
+	}
+
+	logger.WithFields(fields).WithField("port", stats).Debug("Stats are going to listen")
+	statsPort, err := net.Listen("tcp", stats)
+	if err != nil {
+		logger.WithError(err).WithField("stats", stats).Error("Can't listen stats server")
+		return
+	}
+
 	for {
 		conn, err = statsPort.Accept()
 		if err != nil {
-			log.Println("Error during accepting connection", err.Error())
+			logger.WithFields(fields).WithError(err).Error("Couldn't accept connection")
 			continue
 		}
-		conn.SetDeadline(time.Now().Add(RWTimeout))
-		conn.Read(buf)
-		conn.Write([]byte("HTTP/1.0 200 OK\r\nContent-Type: application/json\r\n\r\n"))
-		var peersList []*Peer
-		for _, peer := range *peers {
-			peersList = append(peersList, *peer)
+		deadLine := time.Now().Add(rwTimeout)
+		if err = conn.SetDeadline(deadLine); err != nil {
+			logger.WithFields(fields).WithField("deadline", deadLine.String()).WithError(err).Error("Couldn't set deadline")
+		} else if _, err = conn.Read(buf); err != nil {
+			logger.WithFields(fields).WithError(err).Error("Couldn't read buffer")
+		} else if _, err = conn.Write([]byte("HTTP/1.0 200 OK\r\nContent-Type: application/json\r\n\r\n")); err != nil {
+			logger.WithFields(fields).WithError(err).Error("Couldn't write HTTP headers")
+		} else {
+			var peersList []*Peer
+			for _, peer := range *peers {
+				peersList = append(peersList, *peer)
+			}
+			if err = json.NewEncoder(conn).Encode(peersList); err != nil {
+				logger.WithFields(fields).WithField("peers", len(peersList)).WithError(err).Error("Couldn't encode to JSON")
+			}
 		}
-		data, err = json.Marshal(peersList)
-		if err != nil {
-			panic(err)
+		if err = conn.Close(); err != nil {
+			logger.WithFields(fields).WithError(err).Error("Couldn't close connection")
 		}
-		conn.Write(data)
-		conn.Close()
 	}
 }
