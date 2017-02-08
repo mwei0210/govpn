@@ -9,7 +9,7 @@ git clone . $tmp/govpn-$release
 repos="
     src/cypherpunks.ru/balloon
     src/github.com/agl/ed25519
-    src/github.com/bigeagle/water
+    src/github.com/songgao/water
     src/gopkg.in/yaml.v2
     src/golang.org/x/crypto
 "

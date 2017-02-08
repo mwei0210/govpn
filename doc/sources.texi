@@ -24,7 +24,7 @@ repositories will be unavailable (they are seldom updated):
 @headitem Software/library @tab Mirror
 @item @code{cypherpunks.ru/govpn} @tab @url{https://github.com/stargrave/govpn.git}
 @item @code{github.com/agl/ed25519} @tab @url{git://git.cypherpunks.ru/ed25519.git}
-@item @code{github.com/bigeagle/water} @tab @url{git://git.cypherpunks.ru/water.git}
+@item @code{github.com/songgao/water} @tab @url{https://github.com/songgao/water.git}
 @item @code{github.com/go-yaml/yaml} @tab @url{git://git.cypherpunks.ru/yaml.git}
 @item @code{golang.org/x/crypto} @tab @url{git://git.cypherpunks.ru/crypto.git}
 @end multitable

@@ -11,7 +11,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/bigeagle/water"
+	"github.com/songgao/water"
 )
 
 func newTAPer(ifaceName string) (io.ReadWriter, error) {
