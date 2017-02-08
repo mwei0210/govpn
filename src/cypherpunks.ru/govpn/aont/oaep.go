@@ -36,9 +36,9 @@ package aont
 
 import (
 	"crypto/subtle"
-	"errors"
 
 	"chacha20"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/blake2b"
 )
 
@@ -47,6 +47,9 @@ const (
 	HSize = 32
 	// RSize size of generated random output in terms of OAEP
 	RSize = 16
+
+	wrapBlake2bNew256 = "blake2b.New256"
+	wrapHashWrite     = "hash.Write"
 )
 
 var (
@@ -60,16 +63,22 @@ func Encode(r *[RSize]byte, in []byte) ([]byte, error) {
 	copy(out, in)
 	h, err := blake2b.New256(nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, wrapBlake2bNew256)
 	}
-	h.Write(r[:])
-	h.Write(in)
+	if _, err = h.Write(r[:]); err != nil {
+		return nil, errors.Wrap(err, wrapHashWrite)
+	}
+	if _, err = h.Write(in); err != nil {
+		return nil, errors.Wrap(err, wrapHashWrite)
+	}
 	copy(out[len(in):], h.Sum(nil))
 	chachaKey := new([32]byte)
 	copy(chachaKey[:], r[:])
 	chacha20.XORKeyStream(out, out, dummyNonce, chachaKey)
 	h.Reset()
-	h.Write(out[:len(in)+32])
+	if _, err = h.Write(out[:len(in)+32]); err != nil {
+		return nil, errors.Wrap(err, wrapHashWrite)
+	}
 	for i, b := range h.Sum(nil)[:RSize] {
 		out[len(in)+32+i] = b ^ r[i]
 	}
@@ -84,18 +93,24 @@ func Decode(in []byte) ([]byte, error) {
 	}
 	h, err := blake2b.New256(nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, wrapBlake2bNew256)
 	}
-	h.Write(in[:len(in)-RSize])
+	if _, err = h.Write(in[:len(in)-RSize]); err != nil {
+		return nil, errors.Wrap(err, wrapHashWrite)
+	}
 	chachaKey := new([32]byte)
 	for i, b := range h.Sum(nil)[:RSize] {
 		chachaKey[i] = b ^ in[len(in)-RSize+i]
 	}
 	h.Reset()
-	h.Write(chachaKey[:RSize])
+	if _, err = h.Write(chachaKey[:RSize]); err != nil {
+		return nil, errors.Wrap(err, wrapHashWrite)
+	}
 	out := make([]byte, len(in)-RSize)
 	chacha20.XORKeyStream(out, in[:len(in)-RSize], dummyNonce, chachaKey)
-	h.Write(out[:len(out)-HSize])
+	if _, err = h.Write(out[:len(out)-HSize]); err != nil {
+		return nil, errors.Wrap(err, wrapHashWrite)
+	}
 	if subtle.ConstantTimeCompare(h.Sum(nil), out[len(out)-HSize:]) != 1 {
 		return nil, errors.New("Invalid checksum")
 	}
