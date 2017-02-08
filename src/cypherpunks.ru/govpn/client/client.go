@@ -30,13 +30,17 @@ import (
 	"cypherpunks.ru/govpn"
 )
 
+// Protocol is a GoVPN supported protocol: UDP, TCP or both
 type Protocol int
 
 const (
+	// ProtocolUDP GoVPN over UDP
 	ProtocolUDP Protocol = iota
+	// ProtocolTCP GoVPN over TCP
 	ProtocolTCP
 )
 
+// Configuration hold GoVPN client configuration
 type Configuration struct {
 	PrivateKey          *[ed25519.PrivateKeySize]byte
 	Peer                *govpn.PeerConf
@@ -52,6 +56,7 @@ type Configuration struct {
 	MTU                 int
 }
 
+// Validate return an error if a configuration is invalid
 func (c *Configuration) Validate() error {
 	if c.MTU > govpn.MTUMax {
 		return fmt.Errorf("Invalid MTU %d, maximum allowable is %d", c.MTU, govpn.MTUMax)
@@ -69,6 +74,7 @@ func (c *Configuration) isProxy() bool {
 	return len(c.ProxyAddress) > 0
 }
 
+// Client is a GoVPN client
 type Client struct {
 	idsCache      *govpn.MACCache
 	tap           *govpn.TAP
@@ -85,6 +91,7 @@ type Client struct {
 	Error chan error
 }
 
+// MainCycle main loop of a connecting/connected client
 func (c *Client) MainCycle() {
 	var err error
 	c.tap, err = govpn.TAPListen(c.config.InterfaceName, c.config.MTU)
@@ -146,6 +153,7 @@ MainCycle:
 	}
 }
 
+// NewClient return a configured GoVPN client, to trigger connection MainCycle must be executed
 func NewClient(conf Configuration, verifier *govpn.Verifier, termSignal chan os.Signal) *Client {
 	client := Client{
 		idsCache:    govpn.NewMACCache(),

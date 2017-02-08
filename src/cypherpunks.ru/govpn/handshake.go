@@ -33,10 +33,13 @@ import (
 )
 
 const (
+	// RSize TODO
 	RSize = 8
+	// SSize TODO
 	SSize = 32
 )
 
+// Handshake is state of a handshake/negotiation between client and server
 type Handshake struct {
 	addr     string
 	conn     io.Writer
@@ -116,7 +119,7 @@ func dhKeyGen(priv, pub *[32]byte) *[32]byte {
 	return &hashed
 }
 
-// Create new handshake state.
+// NewHandshake create new handshake state.
 func NewHandshake(addr string, conn io.Writer, conf *PeerConf) *Handshake {
 	state := Handshake{
 		addr:     addr,
@@ -145,7 +148,7 @@ func idTag(id *PeerID, timeSync int, data []byte) []byte {
 	return sum[len(sum)-8:]
 }
 
-// Start handshake's procedure from the client. It is the entry point
+// HandshakeStart start handshake's procedure from the client. It is the entry point
 // for starting the handshake procedure.
 // First handshake packet will be sent immediately.
 func HandshakeStart(addr string, conn io.Writer, conf *PeerConf) *Handshake {
@@ -179,7 +182,7 @@ func HandshakeStart(addr string, conn io.Writer, conf *PeerConf) *Handshake {
 	return state
 }
 
-// Process handshake message on the server side.
+// Server process handshake message on the server side.
 // This function is intended to be called on server's side.
 // If this is the final handshake message, then new Peer object
 // will be created and used as a transport. If no mutually
@@ -333,7 +336,7 @@ func (h *Handshake) Server(data []byte) *Peer {
 	return nil
 }
 
-// Process handshake message on the client side.
+// Client process handshake message on the client side.
 // This function is intended to be called on client's side.
 // If this is the final handshake message, then new Peer object
 // will be created and used as a transport. If no mutually

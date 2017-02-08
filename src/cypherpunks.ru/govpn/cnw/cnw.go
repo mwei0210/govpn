@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// Chaffing-and-Winnowing.
+// Package cnw stand for Chaffing-and-Winnowing.
 //
 // This package implements Chaffing-and-Winnowing technology
 // (http://people.csail.mit.edu/rivest/chaffing-980701.txt).
@@ -50,9 +50,8 @@ import (
 	"golang.org/x/crypto/poly1305"
 )
 
-const (
-	EnlargeFactor = 16 * poly1305.TagSize
-)
+// EnlargeFactor TODO
+const EnlargeFactor = 16 * poly1305.TagSize
 
 func zero(in []byte) {
 	for i := 0; i < len(in); i++ {

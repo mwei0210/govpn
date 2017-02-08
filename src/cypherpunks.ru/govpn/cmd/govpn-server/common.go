@@ -25,6 +25,7 @@ import (
 	"cypherpunks.ru/govpn"
 )
 
+// PeerState hold server side state of a single connecting/connected peer
 type PeerState struct {
 	peer       *govpn.Peer
 	terminator chan struct{}

@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// All-Or-Nothing-Transform, based on OAEP.
+// Package aont stand for All-Or-Nothing-Transform, based on OAEP.
 //
 // This package implements OAEP (Optimal Asymmetric Encryption Padding)
 // (http://cseweb.ucsd.edu/~mihir/papers/oaep.html)
@@ -43,7 +43,9 @@ import (
 )
 
 const (
+	// HSize TODO
 	HSize = 32
+	// RSize TODO
 	RSize = 16
 )
 
