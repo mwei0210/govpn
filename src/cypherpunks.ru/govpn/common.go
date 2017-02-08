@@ -19,15 +19,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package govpn
 
 import (
-	"log"
-	"os"
-	"os/exec"
+	"encoding/hex"
+	"encoding/json"
 	"runtime"
+	"strings"
+	"time"
+
+	"github.com/pkg/errors"
 )
 
 const (
-	TimeoutDefault = 60
-	EtherSize      = 14
+	// ProtocolUDP GoVPN over UDP
+	ProtocolUDP Protocol = iota
+	// ProtocolTCP GoVPN over TCP
+	ProtocolTCP
+	// ProtocolALL GoVPN over UDP or TDP
+	ProtocolALL
+
+	EtherSize = 14
 	// MTUMax is maximum MTU size of ethernet packet
 	MTUMax = 9000 + EtherSize + 1
 	// MTUDefault is default MTU size of ethernet packet
@@ -35,35 +44,92 @@ const (
 
 	ENV_IFACE  = "GOVPN_IFACE"
 	ENV_REMOTE = "GOVPN_REMOTE"
+
+	wrapNewProtocolFromString = "NewProtocolFromString"
 )
 
 var (
 	// Version hold release string set at build time
-	Version string
+	Version      string
+	protocolText = map[Protocol]string{
+		ProtocolUDP: "udp",
+		ProtocolTCP: "tcp",
+		ProtocolALL: "all",
+	}
+	// TimeoutDefault is default timeout value for various network operations
+	TimeoutDefault = 60 * time.Second
 )
 
-// ScriptCall call external program/script.
-// You have to specify path to it and (inteface name as a rule) something
-// that will be the first argument when calling it. Function will return
-// it's output and possible error.
-func ScriptCall(path, ifaceName, remoteAddr string) ([]byte, error) {
-	if path == "" {
-		return nil, nil
-	}
-	if _, err := os.Stat(path); err != nil && os.IsNotExist(err) {
-		return nil, err
-	}
-	cmd := exec.Command(path)
-	cmd.Env = append(cmd.Env, ENV_IFACE+"="+ifaceName)
-	cmd.Env = append(cmd.Env, ENV_REMOTE+"="+remoteAddr)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Println("Script error", path, err, string(out))
-	}
-	return out, err
+// Protocol is a GoVPN supported protocol: UDP, TCP or both
+type Protocol int
+
+// String convert a Protocol into a string
+func (p Protocol) String() string {
+	return protocolText[p]
 }
 
-// Zero each byte.
+// MarshalJSON return a JSON string from a protocol
+func (p Protocol) MarshalJSON() ([]byte, error) {
+	str := p.String()
+	output, err := json.Marshal(&str)
+	return output, errors.Wrap(err, "json.Marshal")
+}
+
+// UnmarshalJSON convert a JSON string into a Protocol
+func (p *Protocol) UnmarshalJSON(encoded []byte) error {
+	var str string
+	if err := json.Unmarshal(encoded, &str); err != nil {
+		return errors.Wrapf(err, "Can't unmarshall to string %q", hex.EncodeToString(encoded))
+	}
+	proto, err := NewProtocolFromString(str)
+	if err != nil {
+		return errors.Wrap(err, wrapNewProtocolFromString)
+	}
+	*p = proto
+	return nil
+}
+
+// UnmarshalYAML convert a YAML string into a Protocol
+func (p *Protocol) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var str string
+	err := unmarshal(&str)
+	if err != nil {
+		return errors.Wrap(err, "unmarshall")
+	}
+
+	proto, err := NewProtocolFromString(str)
+	if err != nil {
+		return errors.Wrap(err, wrapNewProtocolFromString)
+	}
+	*p = proto
+	return nil
+}
+
+// NewProtocolFromString convert a string into a govpn.Protocol
+func NewProtocolFromString(p string) (Protocol, error) {
+	lowP := strings.ToLower(p)
+	for k, v := range protocolText {
+		if strings.ToLower(v) == lowP {
+			return k, nil
+		}
+	}
+
+	choices := make([]string, len(protocolText))
+	var index = 0
+	for k, v := range protocolText {
+		if v == p {
+			z := k
+			p = &z
+			return nil
+		}
+		choices[index] = v
+		index++
+	}
+
+	return Protocol(-1), errors.Errorf("Invalid protocol %q: %s", p, strings.Join(choices, ","))
+}
+
+// SliceZero zero each byte.
 func SliceZero(data []byte) {
 	for i := 0; i < len(data); i++ {
 		data[i] = 0

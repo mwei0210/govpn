@@ -1,6 +1,6 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,10 +22,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
-	"os"
-	"os/signal"
 	"time"
+
+	"github.com/Sirupsen/logrus"
 
 	"cypherpunks.ru/govpn"
 	"cypherpunks.ru/govpn/client"
@@ -54,8 +53,10 @@ func main() {
 		syslog      = flag.Bool("syslog", false, "Enable logging to syslog")
 		version     = flag.Bool("version", false, "Print version information")
 		warranty    = flag.Bool("warranty", false, "Print warranty information")
-		protocol    client.Protocol
+		logLevel    = flag.String("log_level", "warning", "Log level")
+		protocol    govpn.Protocol
 		err         error
+		fields      = logrus.Fields{"func": "main"}
 	)
 
 	flag.Parse()
@@ -67,41 +68,46 @@ func main() {
 		fmt.Println(govpn.VersionGet())
 		return
 	}
-	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Lshortfile)
+
+	logger, err := govpn.NewLogger(*logLevel, *syslog)
+	if err != nil {
+		logrus.WithFields(fields).WithError(err).Fatal("Couldn't initialize logging")
+	}
 
 	if *egdPath != "" {
-		log.Println("Using", *egdPath, "EGD")
+		logger.WithField("egd_path", *egdPath).WithFields(fields).Debug("Init EGD")
 		govpn.EGDInit(*egdPath)
 	}
 
-	switch *proto {
-	case "udp":
-		protocol = client.ProtocolUDP
-	case "tcp":
-		protocol = client.ProtocolTCP
-	default:
-		log.Fatalln("Unknown protocol specified")
+	if protocol, err = govpn.NewProtocolFromString(*proto); err != nil {
+		logger.WithError(err).WithFields(fields).WithField("proto", *proto).Fatal("Invalid protocol")
 	}
 
-	if *proxyAddr != "" && protocol == client.ProtocolUDP {
-		log.Fatalln("HTTP proxy is supported only in TCP mode")
+	if *proxyAddr != "" && protocol == govpn.ProtocolUDP {
+		logrus.WithFields(fields).WithFields(logrus.Fields{
+			"proxy": *proxyAddr,
+			"proto": *proto,
+		}).Fatal("HTTP proxy is supported only in TCP mode")
 	}
 
 	if *verifierRaw == "" {
-		log.Fatalln("-verifier is required")
+		logger.Fatalln("-verifier is required")
 	}
 	verifier, err := govpn.VerifierFromString(*verifierRaw)
 	if err != nil {
-		log.Fatalln("Invalid -verifier:", err)
+		logger.WithError(err).Fatal("Invalid -verifier")
 	}
 	key, err := govpn.KeyRead(*keyPath)
 	if err != nil {
-		log.Fatalln("Invalid -key:", err)
+		logger.WithError(err).Fatal("Invalid -key")
 	}
-	priv := verifier.PasswordApply(key)
+	priv, err := verifier.PasswordApply(key)
+	if err != nil {
+		logger.WithError(err).Fatal("Can't PasswordApply")
+	}
 	if *encless {
-		if protocol != client.ProtocolTCP {
-			log.Fatalln("Currently encryptionless mode works only with TCP")
+		if protocol != govpn.ProtocolTCP {
+			logger.Fatal("Currently encryptionless mode works only with TCP")
 		}
 		*noisy = true
 	}
@@ -118,33 +124,30 @@ func main() {
 			Encless:  *encless,
 			Verifier: verifier,
 			DSAPriv:  priv,
+			Up:       govpn.RunScriptAction(upPath),
+			Down:     govpn.RunScriptAction(downPath),
 		},
 		Protocol:            protocol,
-		InterfaceName:       *ifaceName,
 		ProxyAddress:        *proxyAddr,
 		ProxyAuthentication: *proxyAuth,
 		RemoteAddress:       *remoteAddr,
-		UpPath:              *upPath,
-		DownPath:            *downPath,
-		StatsAddress:        *stats,
 		NoReconnect:         *noreconnect,
-		MTU:                 *mtu,
 	}
 	if err = conf.Validate(); err != nil {
-		log.Fatalln("Invalid settings:", err)
+		logger.WithError(err).Fatal("Invalid settings")
 	}
 
-	log.Println(govpn.VersionGet())
-
-	if *syslog {
-		govpn.SyslogEnable()
+	c, err := client.NewClient(conf, logger, govpn.CatchSignalShutdown())
+	if err != nil {
+		logger.WithError(err).Fatal("Can't initialize client")
 	}
 
-	termSignal := make(chan os.Signal, 1)
-	signal.Notify(termSignal, os.Interrupt, os.Kill)
-	c := client.NewClient(conf, verifier, termSignal)
+	if *stats != "" {
+		go govpn.StatsProcessor(*stats, c.KnownPeers())
+	}
+
 	go c.MainCycle()
 	if err = <-c.Error; err != nil {
-		log.Fatalln(err)
+		logger.WithError(err).Fatal("Fatal error")
 	}
 }

@@ -1,6 +1,6 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -21,27 +21,48 @@ package govpn
 import (
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/agl/ed25519"
 )
 
 // PeerConf is configuration of a single GoVPN Peer (client)
 type PeerConf struct {
-	ID          *PeerID       `yaml:"-"`
-	Name        string        `yaml:"name"`
-	Iface       string        `yaml:"iface"`
-	MTU         int           `yaml:"mtu"`
-	Up          string        `yaml:"up"`
-	Down        string        `yaml:"down"`
-	TimeoutInt  int           `yaml:"timeout"`
-	Timeout     time.Duration `yaml:"-"`
-	Noise       bool          `yaml:"noise"`
-	CPR         int           `yaml:"cpr"`
-	Encless     bool          `yaml:"encless"`
-	TimeSync    int           `yaml:"timesync"`
-	VerifierRaw string        `yaml:"verifier"`
+	ID       *PeerID
+	Name     string
+	Iface    string
+	MTU      int
+	PreUp    TunnelPreUpAction
+	Up       TunnelAction
+	Down     TunnelAction
+	Timeout  time.Duration
+	Noise    bool
+	CPR      int
+	Encless  bool
+	TimeSync int
 
-	// This is passphrase verifier
-	Verifier *Verifier `yaml:"-"`
+	// This is passphrase verifier, client side only
+	Verifier *Verifier
 	// This field exists only on client's side
-	DSAPriv *[ed25519.PrivateKeySize]byte `yaml:"-"`
+	DSAPriv *[ed25519.PrivateKeySize]byte
+}
+
+// LogFields return a logrus compatible logging context
+func (pc *PeerConf) LogFields(rootPrefix string) logrus.Fields {
+	p := rootPrefix + "peerconf_"
+	output := logrus.Fields{
+		p + "peer_name": pc.Name,
+		p + "mtu":       pc.MTU,
+		p + "noise":     pc.Noise,
+		p + "pcr":       pc.CPR,
+		p + "encless":   pc.Encless,
+		p + "timesync":  pc.TimeSync,
+		p + "timeout":   pc.Timeout.String(),
+		p + "pre_up":    pc.PreUp != nil,
+		p + "up":        pc.Up != nil,
+		p + "down":      pc.Down != nil,
+	}
+	if pc.ID != nil {
+		output[p+"id"] = pc.ID.String()
+	}
+	return output
 }

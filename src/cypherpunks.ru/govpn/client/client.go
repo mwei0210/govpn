@@ -19,55 +19,67 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package client
 
 import (
-	"errors"
 	"fmt"
-	"net"
-	"os"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/agl/ed25519"
+	"github.com/pkg/errors"
 
 	"cypherpunks.ru/govpn"
 )
 
-// Protocol is a GoVPN supported protocol: UDP, TCP or both
-type Protocol int
-
-const (
-	// ProtocolUDP GoVPN over UDP
-	ProtocolUDP Protocol = iota
-	// ProtocolTCP GoVPN over TCP
-	ProtocolTCP
-)
+const logFuncPrefix = "govpn/client."
 
 // Configuration hold GoVPN client configuration
 type Configuration struct {
 	PrivateKey          *[ed25519.PrivateKeySize]byte
 	Peer                *govpn.PeerConf
-	Protocol            Protocol
-	InterfaceName       string
+	Protocol            govpn.Protocol
 	ProxyAddress        string
 	ProxyAuthentication string
 	RemoteAddress       string
-	UpPath              string
-	DownPath            string
-	StatsAddress        string
 	NoReconnect         bool
-	MTU                 int
+	// FileDescriptor allow to create a Client from a pre-existing file descriptor.
+	// Required for Android. requires TCP protocol
+	FileDescriptor int
 }
 
 // Validate return an error if a configuration is invalid
 func (c *Configuration) Validate() error {
-	if c.MTU > govpn.MTUMax {
-		return fmt.Errorf("Invalid MTU %d, maximum allowable is %d", c.MTU, govpn.MTUMax)
+	if c.Peer.MTU > govpn.MTUMax {
+		return errors.Errorf("Invalid MTU %d, maximum allowable is %d", c.Peer.MTU, govpn.MTUMax)
 	}
 	if len(c.RemoteAddress) == 0 {
 		return errors.New("Missing RemoteAddress")
 	}
-	if len(c.InterfaceName) == 0 {
-		return errors.New("Missing InterfaceName")
+	if len(c.Peer.Iface) == 0 && c.Peer.PreUp == nil {
+		return errors.New("Missing InterfaceName *or* PreUp")
+	}
+	if c.Protocol != govpn.ProtocolTCP && c.Protocol != govpn.ProtocolUDP {
+		return errors.Errorf("Invalid protocol %d for client", c.Protocol)
+	}
+	if c.FileDescriptor > 0 && c.Protocol != govpn.ProtocolTCP {
+		return errors.Errorf("Connect with file descriptor requires protocol %s", govpn.ProtocolTCP.String())
 	}
 	return nil
+}
+
+// LogFields return a logrus compatible logging context
+func (c *Configuration) LogFields() logrus.Fields {
+	const prefix = "client_conf_"
+	f := c.Peer.LogFields(prefix)
+	f[prefix+"protocol"] = c.Protocol.String()
+	f[prefix+"no_reconnect"] = c.NoReconnect
+	if len(c.ProxyAddress) > 0 {
+		f[prefix+"proxy"] = c.ProxyAddress
+	}
+	if c.FileDescriptor > 0 {
+		f[prefix+"remote"] = fmt.Sprintf("fd:%d(%s)", c.FileDescriptor, c.RemoteAddress)
+	} else {
+		f[prefix+"remote"] = c.RemoteAddress
+	}
+	return f
 }
 
 func (c *Configuration) isProxy() bool {
@@ -79,36 +91,96 @@ type Client struct {
 	idsCache      *govpn.MACCache
 	tap           *govpn.TAP
 	knownPeers    govpn.KnownPeers
-	statsPort     net.Listener
 	timeouted     chan struct{}
 	rehandshaking chan struct{}
 	termination   chan struct{}
 	firstUpCall   bool
-	termSignal    chan os.Signal
+	termSignal    chan interface{}
 	config        Configuration
+	logger        *logrus.Logger
 
 	// Error channel receives any kind of routine errors
 	Error chan error
 }
 
+// LogFields return a logrus compatible logging context
+func (c *Client) LogFields() logrus.Fields {
+	const prefix = "client_"
+	f := logrus.Fields{
+		prefix + "remote": c.config.RemoteAddress,
+	}
+	if c.tap != nil {
+		f[prefix+"interface"] = c.tap.Name
+	}
+	if c.config.Peer != nil {
+		f[prefix+"id"] = c.config.Peer.ID.String()
+	}
+	return f
+}
+
+func (c *Client) postDownAction() error {
+	if c.config.Peer.Down == nil {
+		return nil
+	}
+	err := c.config.Peer.Down(govpn.PeerContext{
+		RemoteAddress: c.config.RemoteAddress,
+		Protocol:      c.config.Protocol,
+		Config:        *c.config.Peer,
+	})
+	return errors.Wrap(err, "c.config.Peer.Down")
+}
+
+func (c *Client) postUpAction() error {
+	if c.config.Peer.Up == nil {
+		return nil
+	}
+	err := c.config.Peer.Up(govpn.PeerContext{
+		RemoteAddress: c.config.RemoteAddress,
+		Protocol:      c.config.Protocol,
+		Config:        *c.config.Peer,
+	})
+	return errors.Wrap(err, "c.config.Peer.Up")
+}
+
+// KnownPeers return GoVPN peers. Always 1.
+// used to get client statistics.
+func (c *Client) KnownPeers() *govpn.KnownPeers {
+	return &c.knownPeers
+}
+
 // MainCycle main loop of a connecting/connected client
 func (c *Client) MainCycle() {
 	var err error
-	c.tap, err = govpn.TAPListen(c.config.InterfaceName, c.config.MTU)
-	if err != nil {
-		c.Error <- fmt.Errorf("Can not listen on TUN/TAP interface: %s", err.Error())
-		return
-	}
+	l := c.logger.WithFields(logrus.Fields{"func": logFuncPrefix + "Client.MainCycle"})
+	l.WithFields(c.LogFields()).WithFields(c.config.LogFields()).Info("Starting...")
 
-	if len(c.config.StatsAddress) > 0 {
-		c.statsPort, err = net.Listen("tcp", c.config.StatsAddress)
-		if err != nil {
-			c.Error <- fmt.Errorf("Can't listen on stats port: %s", err.Error())
+	// if available, run PreUp, it might create interface
+	if c.config.Peer.PreUp != nil {
+		l.Debug("Running PreUp")
+		if c.tap, err = c.config.Peer.PreUp(govpn.PeerContext{
+			RemoteAddress: c.config.RemoteAddress,
+			Protocol:      c.config.Protocol,
+			Config:        *c.config.Peer,
+		}); err != nil {
+			c.Error <- errors.Wrap(err, "c.config.Peer.PreUp")
 			return
 		}
-		c.knownPeers = govpn.KnownPeers(make(map[string]**govpn.Peer))
-		go govpn.StatsProcessor(c.statsPort, &c.knownPeers)
+		l.Debug("PreUp success")
+	} else {
+		l.Debug("No PreUp to run")
 	}
+
+	// if tap wasn't set by PreUp, listen here
+	if c.tap == nil {
+		l.WithField("asking", c.config.Peer.Iface).Debug("No interface, try to listen")
+		c.tap, err = govpn.TAPListen(c.config.Peer.Iface, c.config.Peer.MTU)
+		if err != nil {
+			c.Error <- errors.Wrapf(err, "govpn.TAPListen inteface:%s mtu:%d", c.config.Peer.Iface, c.config.Peer.MTU)
+			return
+		}
+	}
+	c.config.Peer.Iface = c.tap.Name
+	l.WithFields(c.LogFields()).Debug("Got interface, start main loop")
 
 MainCycle:
 	for {
@@ -116,9 +188,11 @@ MainCycle:
 		c.rehandshaking = make(chan struct{})
 		c.termination = make(chan struct{})
 		switch c.config.Protocol {
-		case ProtocolUDP:
+		case govpn.ProtocolUDP:
+			l.Debug("Start UDP")
 			go c.startUDP()
-		case ProtocolTCP:
+		case govpn.ProtocolTCP:
+			l.Debug("Start TCP")
 			if c.config.isProxy() {
 				go c.proxyTCP()
 			} else {
@@ -127,16 +201,18 @@ MainCycle:
 		}
 		select {
 		case <-c.termSignal:
-			govpn.BothPrintf(`[finish remote="%s"]`, c.config.RemoteAddress)
+			l.WithFields(c.LogFields()).Debug("Finish")
 			c.termination <- struct{}{}
 			// empty value signals that everything is fine
 			c.Error <- nil
 			break MainCycle
 		case <-c.timeouted:
 			if c.config.NoReconnect {
+				l.Debug("No reconnect, stop")
+				c.Error <- nil
 				break MainCycle
 			}
-			govpn.BothPrintf(`[sleep seconds="%d"]`, c.config.Peer.Timeout/time.Second)
+			l.WithField("timeout", c.config.Peer.Timeout.String()).Debug("Sleep")
 			time.Sleep(c.config.Peer.Timeout)
 		case <-c.rehandshaking:
 		}
@@ -144,25 +220,27 @@ MainCycle:
 		close(c.rehandshaking)
 		close(c.termination)
 	}
-	if _, err = govpn.ScriptCall(
-		c.config.DownPath,
-		c.config.InterfaceName,
-		c.config.RemoteAddress,
-	); err != nil {
-		c.Error <- err
+	l.WithFields(c.config.LogFields()).Debug("Run post down action")
+	if err = c.postDownAction(); err != nil {
+		c.Error <- errors.Wrap(err, "c.postDownAction")
 	}
 }
 
 // NewClient return a configured GoVPN client, to trigger connection MainCycle must be executed
-func NewClient(conf Configuration, verifier *govpn.Verifier, termSignal chan os.Signal) *Client {
+func NewClient(conf Configuration, logger *logrus.Logger, termSignal chan interface{}) (*Client, error) {
 	client := Client{
 		idsCache:    govpn.NewMACCache(),
 		firstUpCall: true,
 		config:      conf,
 		termSignal:  termSignal,
 		Error:       make(chan error, 1),
+		knownPeers:  govpn.KnownPeers(make(map[string]**govpn.Peer)),
+		logger:      logger,
 	}
-	confs := map[govpn.PeerID]*govpn.PeerConf{*verifier.ID: conf.Peer}
-	client.idsCache.Update(&confs)
-	return &client
+	govpn.SetLogger(client.logger)
+	confs := map[govpn.PeerID]*govpn.PeerConf{*conf.Peer.ID: conf.Peer}
+	if err := client.idsCache.Update(&confs); err != nil {
+		return nil, errors.Wrap(err, "client.idsCache.Update")
+	}
+	return &client, nil
 }
