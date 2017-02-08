@@ -36,10 +36,6 @@ func (c udpSender) Write(data []byte) (int, error) {
 	return c.conn.WriteToUDP(data, c.addr)
 }
 
-// TODO move to udpSender (?)
-// buffers for UDP parallel processing
-var udpBufs = make(chan []byte, 1<<8)
-
 func (s *Server) startUDP() {
 	bind, err := net.ResolveUDPAddr("udp", s.configuration.BindAddress)
 	if err != nil {
@@ -63,6 +59,8 @@ func (s *Server) startUDP() {
 	).WithFields(
 		s.configuration.LogFields(),
 	).Info("Listen")
+
+	udpBufs := make(chan []byte, 1<<8)
 	udpBufs <- make([]byte, govpn.MTUMax)
 	go func() {
 		var buf []byte
