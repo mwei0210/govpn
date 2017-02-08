@@ -379,11 +379,11 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 		return false
 	}
 	var out []byte
+	var err error
 	p.BusyR.Lock()
 	defer p.BusyR.Unlock()
 	copy(p.nonceR[8:], data[len(data)-NonceSize:])
 	if p.Encless {
-		var err error
 		out, err = EnclessDecode(p.key, p.nonceR, data[:len(data)-NonceSize])
 		if err != nil {
 			logger.WithFields(
@@ -470,7 +470,9 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 		return true
 	}
 	p.BytesPayloadIn += uint64(p.pktSizeR)
-	tap.Write(out[:p.pktSizeR])
+	if _, err = tap.Write(out[:p.pktSizeR]); err != nil {
+		logger.WithFields(p.LogFields()).WithFields(fields).WithError(err).Error("Can't write to TAP")
+	}
 	return true
 }
 
