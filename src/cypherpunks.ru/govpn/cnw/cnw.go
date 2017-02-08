@@ -44,9 +44,9 @@ package cnw
 import (
 	"crypto/subtle"
 	"encoding/binary"
-	"errors"
 
 	"chacha20"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/poly1305"
 )
 

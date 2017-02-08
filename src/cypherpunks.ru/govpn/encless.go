@@ -1,6 +1,6 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -21,6 +21,8 @@ package govpn
 import (
 	"io"
 
+	"github.com/pkg/errors"
+
 	"cypherpunks.ru/govpn/aont"
 	"cypherpunks.ru/govpn/cnw"
 )
@@ -38,11 +40,11 @@ func EnclessEncode(authKey *[32]byte, nonce *[16]byte, in []byte) ([]byte, error
 	r := new([aont.RSize]byte)
 	var err error
 	if _, err = io.ReadFull(Rand, r[:]); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, wrapIoReadFull, "Rand")
 	}
 	aonted, err := aont.Encode(r, in)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "aont.Encode")
 	}
 	out := append(
 		cnw.Chaff(authKey, nonce[8:], aonted[:aont.RSize]),
@@ -59,14 +61,14 @@ func EnclessDecode(authKey *[32]byte, nonce *[16]byte, in []byte) ([]byte, error
 		authKey, nonce[8:], in[:aont.RSize*cnw.EnlargeFactor],
 	)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "cnw.Winnow")
 	}
 	out, err := aont.Decode(append(
 		winnowed, in[aont.RSize*cnw.EnlargeFactor:]...,
 	))
 	SliceZero(winnowed)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "aont.Decode")
 	}
 	return out, nil
 }
