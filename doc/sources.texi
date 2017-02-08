@@ -27,4 +27,6 @@ repositories will be unavailable (they are seldom updated):
 @item @code{github.com/songgao/water} @tab @url{https://github.com/songgao/water.git}
 @item @code{github.com/go-yaml/yaml} @tab @url{git://git.cypherpunks.ru/yaml.git}
 @item @code{golang.org/x/crypto} @tab @url{git://git.cypherpunks.ru/crypto.git}
+@item @code{github.com/pkg/errors} @tab @url{https://github.com/pkg/errors.git}
+@item @code{github.com/sirupsen/logrus} @tab @url{https://github.com/sirupsen/logrus.git}
 @end multitable

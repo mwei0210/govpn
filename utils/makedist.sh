@@ -12,6 +12,8 @@ repos="
     src/github.com/songgao/water
     src/gopkg.in/yaml.v2
     src/golang.org/x/crypto
+    src/github.com/pkg/errors
+    src/github.com/sirupsen/logrus
 "
 for repo in $repos; do
     git clone $repo $tmp/govpn-$release/$repo
@@ -50,6 +52,7 @@ rm -r doc/.well-known doc/govpn.html/.well-known utils/news.sh
 rm utils/makedist.sh
 find . -name .git -type d | xargs rm -fr
 find . -name .gitignore -delete
+find . -name .travis.yml -delete
 rm .gitmodules
 
 cd ..
