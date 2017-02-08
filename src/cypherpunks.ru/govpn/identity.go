@@ -22,11 +22,13 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/hex"
 	"hash"
-	"log"
 	"sync"
 	"time"
 
+	"github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/blake2b"
 )
 
@@ -59,40 +61,70 @@ type MACCache struct {
 	l     sync.RWMutex
 }
 
+// Length returns size of MACCache
+func (mc *MACCache) Length() int {
+	return len(mc.cache)
+}
+
 // NewMACCache returns a new MACCache instance
 func NewMACCache() *MACCache {
 	return &MACCache{cache: make(map[PeerID]*MACAndTimeSync)}
 }
 
 // Update removes disappeared keys, add missing ones with initialized MACs.
-func (mc *MACCache) Update(peers *map[PeerID]*PeerConf) {
+func (mc *MACCache) Update(peers *map[PeerID]*PeerConf) error {
 	mc.l.Lock()
+	defer mc.l.Unlock()
+	fields := logrus.Fields{
+		"func":  logFuncPrefix + "MACCache.Update",
+		"peers": len(*peers),
+	}
+	logger.WithFields(fields).WithField("size", mc.Length()).Debug("Clean old keys")
 	for pid := range mc.cache {
 		if _, exists := (*peers)[pid]; !exists {
-			log.Println("Cleaning key:", pid)
+			logger.WithFields(fields).WithField("pid", pid).Debug("Cleaning key")
 			delete(mc.cache, pid)
 		}
 	}
+	logger.WithFields(fields).WithField("size", mc.Length()).Debug("Cleaned, add/update new key")
 	for pid, pc := range *peers {
 		if _, exists := mc.cache[pid]; exists {
+			logger.WithFields(fields).WithFields(
+				logrus.Fields{
+					"pid":    pid.String(),
+					"old_ts": mc.cache[pid].ts,
+					"new_ts": pc.TimeSync,
+				}).Debug("Rest timesync")
 			mc.cache[pid].ts = pc.TimeSync
 		} else {
-			log.Println("Adding key", pid)
+			before := time.Now()
 			mac, err := blake2b.New256(pid[:])
 			if err != nil {
-				panic(err)
+				return errors.Wrap(err, wrapBlake2bNew256)
 			}
+			logger.WithFields(fields).WithFields(logrus.Fields{
+				"pid":     pid.String(),
+				"ts":      pc.TimeSync,
+				"elapsed": time.Now().Sub(before).String(),
+			}).Debug("Adding key")
 			mc.cache[pid] = &MACAndTimeSync{
 				mac: mac,
 				ts:  pc.TimeSync,
 			}
 		}
 	}
-	mc.l.Unlock()
+	logger.WithFields(fields).WithField("size", mc.Length()).Debug("Finish")
+	return nil
 }
 
 // AddTimeSync XORs timestamp with data if timeSync > 0
 func AddTimeSync(ts int, data []byte) {
+	fields := logrus.Fields{
+		"func":      logFuncPrefix + "AddTimeSync",
+		"ts":        ts,
+		"data_size": len(data),
+		"data":      hex.EncodeToString(data),
+	}
 	if ts == 0 {
 		return
 	}
@@ -101,32 +133,52 @@ func AddTimeSync(ts int, data []byte) {
 	for i := 0; i < 8; i++ {
 		data[i] ^= buf[i]
 	}
+	logger.WithFields(fields).WithField("after", hex.EncodeToString(data)).Debug("Done")
 }
 
 // Find tries to find peer's identity (that equals to MAC)
 // by taking first blocksize sized bytes from data at the beginning
 // as plaintext and last bytes as cyphertext.
-func (mc *MACCache) Find(data []byte) *PeerID {
-	if len(data) < 8*2 {
-		return nil
+func (mc *MACCache) Find(data []byte) (*PeerID, error) {
+	const minimumSize = 8 * 2
+	lenData := len(data)
+	fields := logrus.Fields{
+		"func": logFuncPrefix + "MACCache.Find",
+		"data": lenData,
+		"size": mc.Length(),
+	}
+	logger.WithFields(fields).Debug("Starting")
+	if lenData < minimumSize {
+		return nil, errors.Errorf("MAC is too small %d, minimum %d", lenData, minimumSize)
 	}
 	buf := make([]byte, 8)
 	sum := make([]byte, 32)
 	mc.l.RLock()
+	defer mc.l.RUnlock()
 	for pid, mt := range mc.cache {
+		loopFields := logrus.Fields{"pid": pid.String()}
+		logger.WithFields(loopFields).Debug("process")
 		copy(buf, data)
 		AddTimeSync(mt.ts, buf)
 		mt.l.Lock()
 		mt.mac.Reset()
-		mt.mac.Write(buf)
+		logger.WithFields(fields).WithField("buf", hex.EncodeToString(buf)).Debug("mt.mac.Write")
+		if _, err := mt.mac.Write(buf); err != nil {
+			mt.l.Unlock()
+			return nil, errors.Wrap(err, "mt.mac.Write")
+		}
+		logger.WithFields(fields).WithField("buf", hex.EncodeToString(buf[:0])).Debug("mt.mac.Sum")
 		mt.mac.Sum(sum[:0])
 		mt.l.Unlock()
-		if subtle.ConstantTimeCompare(sum[len(sum)-8:], data[len(data)-8:]) == 1 {
+
+		if subtle.ConstantTimeCompare(sum[len(sum)-8:], data[lenData-8:]) == 1 {
+			logger.WithFields(fields).WithFields(loopFields).Debug("Matching peer")
 			ppid := PeerID(pid)
-			mc.l.RUnlock()
-			return &ppid
+			return &ppid, nil
 		}
+
+		logger.WithFields(fields).WithFields(loopFields).Debug("Not matching peer")
 	}
-	mc.l.RUnlock()
-	return nil
+	logger.WithFields(fields).Debug("Couldn't find matching peer ID")
+	return nil, nil
 }

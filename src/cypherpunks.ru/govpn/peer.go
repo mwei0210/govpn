@@ -1,6 +1,6 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,34 +23,36 @@ import (
 	"crypto/subtle"
 	"encoding/binary"
 	"io"
-	"log"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"chacha20"
+	"github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/poly1305"
 )
 
 const (
 	// NonceSize is nonce size
-	NonceSize       = 8
-	NonceBucketSize = 256
-	TagSize         = poly1305.TagSize
-	// S20BS is ChaCha20's internal blocksize in bytes
-	S20BS = 64
+	NonceSize                 = 8
+	nonceBucketSize           = 256
+	tagSize                   = poly1305.TagSize
+	chacha20InternalBlockSize = 64
 	// MaxBytesPerKey is maximal amount of bytes transferred with single key (4 GiB)
 	MaxBytesPerKey uint64 = 1 << 32
 	// Heartbeat rate, relative to Timeout
-	TimeoutHeartbeat = 4
+	timeoutHeartbeat = 4
 	// MinPktLength is minimal valid packet length
 	MinPktLength = 1 + 16 + 8
-	// Padding byte
-	PadByte = byte(0x80)
+	// padding byte
+	padByte = byte(0x80)
+
+	logPrefixPeer = "peer_"
 )
 
-func newNonces(key *[32]byte, i uint64) chan *[NonceSize]byte {
+func newNonces(key *[32]byte, i uint64) (chan *[NonceSize]byte, error) {
 	macKey := make([]byte, 32)
 	chacha20.XORKeyStream(macKey, make([]byte, 32), new([16]byte), key)
 	mac, err := blake2b.New256(macKey)
@@ -58,7 +60,7 @@ func newNonces(key *[32]byte, i uint64) chan *[NonceSize]byte {
 		panic(err)
 	}
 	sum := make([]byte, mac.Size())
-	nonces := make(chan *[NonceSize]byte, NonceBucketSize*3)
+	nonces := make(chan *[NonceSize]byte, nonceBucketSize*3)
 	go func() {
 		for {
 			buf := new([NonceSize]byte)
@@ -71,7 +73,7 @@ func newNonces(key *[32]byte, i uint64) chan *[NonceSize]byte {
 			i += 2
 		}
 	}()
-	return nonces
+	return nonces, nil
 }
 
 // Peer is a GoVPN peer (client)
@@ -89,9 +91,10 @@ type Peer struct {
 	HeartbeatSent   uint64
 
 	// Basic
-	Addr string
-	ID   *PeerID
-	Conn io.Writer `json:"-"`
+	Addr     string
+	ID       *PeerID
+	Conn     io.Writer `json:"-"`
+	Protocol Protocol
 
 	// Traffic behaviour
 	NoiseEnable bool
@@ -110,7 +113,7 @@ type Peer struct {
 	// Receiver
 	BusyR    sync.Mutex `json:"-"`
 	bufR     []byte
-	tagR     *[TagSize]byte
+	tagR     *[tagSize]byte
 	keyAuthR *[SSize]byte
 	nonceR   *[16]byte
 	pktSizeR int
@@ -129,11 +132,34 @@ type Peer struct {
 	// Transmitter
 	BusyT    sync.Mutex `json:"-"`
 	bufT     []byte
-	tagT     *[TagSize]byte
+	tagT     *[tagSize]byte
 	keyAuthT *[SSize]byte
 	nonceT   *[16]byte
 	frameT   []byte
 	noncesT  chan *[NonceSize]byte
+}
+
+// LogFields return a logrus compatible Fields to identity a single peer in logs
+func (p *Peer) LogFields() logrus.Fields {
+	return logrus.Fields{
+		logPrefixPeer + "addr":        p.Addr,
+		logPrefixPeer + "id":          p.ID.String(),
+		logPrefixPeer + "established": p.Established.String(),
+		logPrefixPeer + "last_ping":   p.LastPing.String(),
+	}
+}
+
+// ConfigurationLogFields return a logrus compatible Fields with the settings of
+// a single peer. Complement LogFields() for extra debugging details.
+func (p *Peer) ConfigurationLogFields() logrus.Fields {
+	return logrus.Fields{
+		logPrefixPeer + "timeout":  p.Timeout.String(),
+		logPrefixPeer + "protocol": p.Protocol.String(),
+		logPrefixPeer + "noise":    p.NoiseEnable,
+		logPrefixPeer + "cpr":      p.CPR,
+		logPrefixPeer + "mtu":      p.MTU,
+		logPrefixPeer + "encless":  p.Encless,
+	}
 }
 
 func (p *Peer) String() string {
@@ -166,7 +192,7 @@ func cprCycleCalculate(conf *PeerConf) time.Duration {
 	return time.Second / time.Duration(rate)
 }
 
-func newPeer(isClient bool, addr string, conn io.Writer, conf *PeerConf, key *[SSize]byte) *Peer {
+func newPeer(isClient bool, addr string, conn io.Writer, conf *PeerConf, key *[SSize]byte) (*Peer, error) {
 	now := time.Now()
 	timeout := conf.Timeout
 
@@ -176,10 +202,10 @@ func newPeer(isClient bool, addr string, conn io.Writer, conf *PeerConf, key *[S
 		noiseEnable = true
 		timeout = cprCycle
 	} else {
-		timeout = timeout / TimeoutHeartbeat
+		timeout = timeout / timeoutHeartbeat
 	}
 
-	bufSize := S20BS + 2*conf.MTU
+	bufSize := chacha20InternalBlockSize + 2*conf.MTU
 	if conf.Encless {
 		bufSize += EnclessEnlargeSize
 		noiseEnable = true
@@ -204,22 +230,35 @@ func newPeer(isClient bool, addr string, conn io.Writer, conf *PeerConf, key *[S
 
 		bufR:     make([]byte, bufSize),
 		bufT:     make([]byte, bufSize),
-		tagR:     new([TagSize]byte),
-		tagT:     new([TagSize]byte),
+		tagR:     new([tagSize]byte),
+		tagT:     new([tagSize]byte),
 		keyAuthR: new([SSize]byte),
 		nonceR:   new([16]byte),
 		keyAuthT: new([SSize]byte),
 		nonceT:   new([16]byte),
 	}
 
+	var err error
 	if isClient {
-		peer.noncesT = newNonces(peer.key, 1+2)
-		peer.noncesR = newNonces(peer.key, 0+2)
-		peer.noncesExpect = newNonces(peer.key, 0+2)
+		if peer.noncesT, err = newNonces(peer.key, 1+2); err != nil {
+			return nil, err
+		}
+		if peer.noncesR, err = newNonces(peer.key, 0+2); err != nil {
+			return nil, err
+		}
+		if peer.noncesExpect, err = newNonces(peer.key, 0+2); err != nil {
+			return nil, err
+		}
 	} else {
-		peer.noncesT = newNonces(peer.key, 0+2)
-		peer.noncesR = newNonces(peer.key, 1+2)
-		peer.noncesExpect = newNonces(peer.key, 1+2)
+		if peer.noncesT, err = newNonces(peer.key, 0+2); err != nil {
+			return nil, err
+		}
+		if peer.noncesR, err = newNonces(peer.key, 1+2); err != nil {
+			return nil, err
+		}
+		if peer.noncesExpect, err = newNonces(peer.key, 1+2); err != nil {
+			return nil, err
+		}
 	}
 
 	peer.NonceExpect = make([]byte, NonceSize)
@@ -227,55 +266,63 @@ func newPeer(isClient bool, addr string, conn io.Writer, conf *PeerConf, key *[S
 	copy(peer.NonceExpect, nonce[:])
 
 	var i int
-	peer.nonceBucketL = make(map[[NonceSize]byte]struct{}, NonceBucketSize)
-	for i = 0; i < NonceBucketSize; i++ {
+	peer.nonceBucketL = make(map[[NonceSize]byte]struct{}, nonceBucketSize)
+	for i = 0; i < nonceBucketSize; i++ {
 		nonce = <-peer.noncesR
 		peer.nonceBucketL[*nonce] = struct{}{}
 	}
-	peer.nonceBucketM = make(map[[NonceSize]byte]struct{}, NonceBucketSize)
-	for i = 0; i < NonceBucketSize; i++ {
+	peer.nonceBucketM = make(map[[NonceSize]byte]struct{}, nonceBucketSize)
+	for i = 0; i < nonceBucketSize; i++ {
 		nonce = <-peer.noncesR
 		peer.nonceBucketM[*nonce] = struct{}{}
 	}
-	peer.nonceBucketH = make(map[[NonceSize]byte]struct{}, NonceBucketSize)
-	for i = 0; i < NonceBucketSize; i++ {
+	peer.nonceBucketH = make(map[[NonceSize]byte]struct{}, nonceBucketSize)
+	for i = 0; i < nonceBucketSize; i++ {
 		nonce = <-peer.noncesR
 		peer.nonceBucketH[*nonce] = struct{}{}
 	}
 
-	return &peer
+	return &peer, nil
 }
 
 // EthProcess processes incoming Ethernet packet.
 // ready channel is TAPListen's synchronization channel used to tell him
 // that he is free to receive new packets. Encrypted and authenticated
 // packets will be sent to remote Peer side immediately.
-func (p *Peer) EthProcess(data []byte) {
-	if len(data) > p.MTU-1 { // 1 is for padding byte
-		log.Println("Padded data packet size", len(data)+1, "is bigger than MTU", p.MTU, p)
-		return
+func (p *Peer) EthProcess(data []byte) error {
+	const paddingSize = 1
+	lenData := len(data)
+	if lenData > p.MTU-paddingSize {
+		logger.WithFields(p.LogFields()).WithFields(p.ConfigurationLogFields()).WithFields(
+			logrus.Fields{
+				"func":        logFuncPrefix + "Peer.EthProcess",
+				"padding":     paddingSize,
+				"packet_size": lenData,
+			}).Warning("Ignore padded data packet larger than MTU")
+		return nil
 	}
 	p.BusyT.Lock()
+	defer p.BusyT.Unlock()
 
 	// Zero size is a heartbeat packet
 	SliceZero(p.bufT)
-	if len(data) == 0 {
-		p.bufT[S20BS+0] = PadByte
+	if lenData == 0 {
+		p.bufT[chacha20InternalBlockSize+0] = padByte
 		p.HeartbeatSent++
 	} else {
 		// Copy payload to our internal buffer and we are ready to
 		// accept the next one
-		copy(p.bufT[S20BS:], data)
-		p.bufT[S20BS+len(data)] = PadByte
-		p.BytesPayloadOut += uint64(len(data))
+		copy(p.bufT[chacha20InternalBlockSize:], data)
+		p.bufT[chacha20InternalBlockSize+lenData] = padByte
+		p.BytesPayloadOut += uint64(lenData)
 	}
 
 	if p.NoiseEnable && !p.Encless {
-		p.frameT = p.bufT[S20BS : S20BS+p.MTU-TagSize]
+		p.frameT = p.bufT[chacha20InternalBlockSize : chacha20InternalBlockSize+p.MTU-tagSize]
 	} else if p.Encless {
-		p.frameT = p.bufT[S20BS : S20BS+p.MTU]
+		p.frameT = p.bufT[chacha20InternalBlockSize : chacha20InternalBlockSize+p.MTU]
 	} else {
-		p.frameT = p.bufT[S20BS : S20BS+len(data)+1+NonceSize]
+		p.frameT = p.bufT[chacha20InternalBlockSize : chacha20InternalBlockSize+lenData+1+NonceSize]
 	}
 	copy(p.frameT[len(p.frameT)-NonceSize:], (<-p.noncesT)[:])
 	var out []byte
@@ -284,41 +331,49 @@ func (p *Peer) EthProcess(data []byte) {
 		var err error
 		out, err = EnclessEncode(p.key, p.nonceT, p.frameT[:len(p.frameT)-NonceSize])
 		if err != nil {
-			panic(err)
+			return errors.Wrap(err, wrapEnclessEncode)
 		}
 		out = append(out, p.frameT[len(p.frameT)-NonceSize:]...)
 	} else {
 		chacha20.XORKeyStream(
-			p.bufT[:S20BS+len(p.frameT)-NonceSize],
-			p.bufT[:S20BS+len(p.frameT)-NonceSize],
+			p.bufT[:chacha20InternalBlockSize+len(p.frameT)-NonceSize],
+			p.bufT[:chacha20InternalBlockSize+len(p.frameT)-NonceSize],
 			p.nonceT,
 			p.key,
 		)
 		copy(p.keyAuthT[:], p.bufT[:SSize])
 		poly1305.Sum(p.tagT, p.frameT, p.keyAuthT)
-		atomic.AddUint64(&p.BytesOut, uint64(len(p.frameT)+TagSize))
+		atomic.AddUint64(&p.BytesOut, uint64(len(p.frameT)+tagSize))
 		out = append(p.tagT[:], p.frameT...)
 	}
 	p.FramesOut++
-	p.Conn.Write(out)
-	p.BusyT.Unlock()
+	_, err := p.Conn.Write(out)
+	return errors.Wrap(err, "p.Conn.Write")
 }
 
 // PktProcess processes data of a single packet
 func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
-	if len(data) < MinPktLength {
+	lenData := len(data)
+	fields := logrus.Fields{
+		"func":        logFuncPrefix + "Peer.PktProcess",
+		"reorderable": reorderable,
+		"data":        lenData,
+	}
+	if lenData < MinPktLength {
+		logger.WithFields(p.LogFields()).WithFields(fields).WithField("minimum_packet_Length", MinPktLength).Debug("Ignore packet smaller than allowed minimum")
 		return false
 	}
-	if !p.Encless && len(data) > len(p.bufR)-S20BS {
+	if !p.Encless && lenData > len(p.bufR)-chacha20InternalBlockSize {
 		return false
 	}
 	var out []byte
-	p.BusyR.Lock()
-	copy(p.nonceR[8:], data[len(data)-NonceSize:])
+	p.BusyR.Lock() // TODO use defer to unlock?
+	copy(p.nonceR[8:], data[lenData-NonceSize:])
 	if p.Encless {
 		var err error
-		out, err = EnclessDecode(p.key, p.nonceR, data[:len(data)-NonceSize])
+		out, err = EnclessDecode(p.key, p.nonceR, data[:lenData-NonceSize])
 		if err != nil {
+			logger.WithFields(p.LogFields()).WithError(err).Debug("Failed to decode encless")
 			p.FramesUnauth++
 			p.BusyR.Unlock()
 			return false
@@ -327,25 +382,25 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 		for i := 0; i < SSize; i++ {
 			p.bufR[i] = 0
 		}
-		copy(p.bufR[S20BS:], data[TagSize:])
+		copy(p.bufR[chacha20InternalBlockSize:], data[tagSize:])
 		chacha20.XORKeyStream(
-			p.bufR[:S20BS+len(data)-TagSize-NonceSize],
-			p.bufR[:S20BS+len(data)-TagSize-NonceSize],
+			p.bufR[:chacha20InternalBlockSize+lenData-tagSize-NonceSize],
+			p.bufR[:chacha20InternalBlockSize+lenData-tagSize-NonceSize],
 			p.nonceR,
 			p.key,
 		)
 		copy(p.keyAuthR[:], p.bufR[:SSize])
-		copy(p.tagR[:], data[:TagSize])
-		if !poly1305.Verify(p.tagR, data[TagSize:], p.keyAuthR) {
+		copy(p.tagR[:], data[:tagSize])
+		if !poly1305.Verify(p.tagR, data[tagSize:], p.keyAuthR) {
 			p.FramesUnauth++
 			p.BusyR.Unlock()
 			return false
 		}
-		out = p.bufR[S20BS : S20BS+len(data)-TagSize-NonceSize]
+		out = p.bufR[chacha20InternalBlockSize : chacha20InternalBlockSize+lenData-tagSize-NonceSize]
 	}
 
 	if reorderable {
-		copy(p.nonceRecv[:], data[len(data)-NonceSize:])
+		copy(p.nonceRecv[:], data[lenData-NonceSize:])
 		_, foundL := p.nonceBucketL[p.nonceRecv]
 		_, foundM := p.nonceBucketM[p.nonceRecv]
 		_, foundH := p.nonceBucketH[p.nonceRecv]
@@ -371,13 +426,13 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 			p.nonceBucketL, p.nonceBucketM = p.nonceBucketM, p.nonceBucketH
 			p.nonceBucketH = make(map[[NonceSize]byte]struct{})
 			var nonce *[NonceSize]byte
-			for i := 0; i < NonceBucketSize; i++ {
+			for i := 0; i < nonceBucketSize; i++ {
 				nonce = <-p.noncesR
 				p.nonceBucketH[*nonce] = struct{}{}
 			}
 		}
 	} else {
-		if subtle.ConstantTimeCompare(data[len(data)-NonceSize:], p.NonceExpect) != 1 {
+		if subtle.ConstantTimeCompare(data[lenData-NonceSize:], p.NonceExpect) != 1 {
 			p.FramesDup++
 			p.BusyR.Unlock()
 			return false
@@ -386,9 +441,9 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 	}
 
 	p.FramesIn++
-	atomic.AddUint64(&p.BytesIn, uint64(len(data)))
+	atomic.AddUint64(&p.BytesIn, uint64(lenData))
 	p.LastPing = time.Now()
-	p.pktSizeR = bytes.LastIndexByte(out, PadByte)
+	p.pktSizeR = bytes.LastIndexByte(out, padByte)
 	if p.pktSizeR == -1 {
 		p.BusyR.Unlock()
 		return false
@@ -416,6 +471,11 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 func PeerTapProcessor(peer *Peer, tap *TAP, terminator chan struct{}) {
 	var data []byte
 	var now time.Time
+	var err error
+	fields := logrus.Fields{
+		"func": logFuncPrefix + "PeerTapProcessor",
+		"tap":  tap.Name,
+	}
 	lastSent := time.Now()
 	heartbeat := time.NewTicker(peer.Timeout)
 	if peer.CPRCycle == time.Duration(0) {
@@ -427,11 +487,15 @@ func PeerTapProcessor(peer *Peer, tap *TAP, terminator chan struct{}) {
 			case <-heartbeat.C:
 				now = time.Now()
 				if lastSent.Add(peer.Timeout).Before(now) {
-					peer.EthProcess(nil)
+					if err = peer.EthProcess(nil); err != nil {
+						logger.WithFields(fields).WithFields(peer.LogFields()).WithError(err).Warn("Can't process nil ethernet packet")
+					}
 					lastSent = now
 				}
 			case data = <-tap.Sink:
-				peer.EthProcess(data)
+				if err = peer.EthProcess(data); err != nil {
+					logger.WithFields(fields).WithFields(peer.LogFields()).WithError(err).Warn("Can't process ethernet packet")
+				}
 				lastSent = time.Now()
 			}
 		}
@@ -443,11 +507,15 @@ func PeerTapProcessor(peer *Peer, tap *TAP, terminator chan struct{}) {
 			case <-terminator:
 				break CPRProcessor
 			case data = <-tap.Sink:
-				peer.EthProcess(data)
+				if err = peer.EthProcess(data); err != nil {
+					logger.WithFields(fields).WithFields(peer.LogFields()).WithError(err).Warn("Can't process ethernet packet")
+				}
 			default:
 			}
 			if data == nil {
-				peer.EthProcess(nil)
+				if err = peer.EthProcess(nil); err != nil {
+					logger.WithFields(fields).WithFields(peer.LogFields()).WithError(err).Warn("Can't process nil ethernet packet")
+				}
 			}
 			time.Sleep(peer.CPRCycle)
 		}

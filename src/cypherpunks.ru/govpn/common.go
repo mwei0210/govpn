@@ -21,10 +21,14 @@ package govpn
 import (
 	"encoding/hex"
 	"encoding/json"
+	"io"
+	"os"
+	"os/signal"
 	"runtime"
 	"strings"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 )
 
@@ -36,15 +40,19 @@ const (
 	// ProtocolALL is TCP+UDP transport protocol
 	ProtocolALL
 
-	EtherSize = 14
+	etherSize = 14
 	// MTUMax is maximum MTU size of Ethernet packet
-	MTUMax = 9000 + EtherSize + 1
+	MTUMax = 9000 + etherSize + 1
 	// MTUDefault is default MTU size of Ethernet packet
-	MTUDefault = 1500 + EtherSize + 1
+	MTUDefault = 1500 + etherSize + 1
 
-	ENV_IFACE  = "GOVPN_IFACE"
-	ENV_REMOTE = "GOVPN_REMOTE"
+	environmentKeyInterface = "GOVPN_IFACE"
+	environmentKeyRemote    = "GOVPN_REMOTE"
 
+	wrapIoReadFull            = "io.ReadFull %q"
+	wrapBlake2bNew256         = "blake2b.New256"
+	wrapEnclessDecode         = "EnclessDecode"
+	wrapEnclessEncode         = "EnclessEncode"
 	wrapNewProtocolFromString = "NewProtocolFromString"
 )
 
@@ -56,6 +64,8 @@ var (
 		ProtocolTCP: "tcp",
 		ProtocolALL: "all",
 	}
+	logger        = logrus.StandardLogger()
+	logFuncPrefix = "govpn."
 	// TimeoutDefault is default timeout value for various network operations
 	TimeoutDefault = 60 * time.Second
 )
@@ -136,6 +146,38 @@ func SliceZero(data []byte) {
 	}
 }
 
+// VersionGet return version of GoVPN
 func VersionGet() string {
 	return "GoVPN version " + Version + " built with " + runtime.Version()
+}
+
+// CatchSignalShutdown return a channel.
+// that channel will get a SIG_INT or SIG_KILL signal is received
+// this is intended to be used to stop a client/server
+func CatchSignalShutdown() chan interface{} {
+	shutdownChan := make(chan interface{}, 1)
+	go func() {
+		termSignal := make(chan os.Signal, 1)
+		signal.Notify(termSignal, os.Interrupt, os.Kill)
+		sig := <-termSignal
+		logger.WithFields(logrus.Fields{
+			"func":   logFuncPrefix + "CatchSignalShutdown",
+			"signal": sig.String(),
+		}).Debug("Catch signal, shutting down")
+		shutdownChan <- sig
+	}()
+	return shutdownChan
+}
+
+// SetLogger set the Logger used by this library.
+// by default logrus StdLogger is used.
+func SetLogger(l *logrus.Logger) {
+	logger = l
+}
+
+// CloseLog log an error if a io.Closer fail to Close
+func CloseLog(c io.Closer, l *logrus.Logger, fields logrus.Fields) {
+	if err := c.Close(); err != nil {
+		logrus.WithFields(fields).WithError(err).Error("Couldn't close connection")
+	}
 }
