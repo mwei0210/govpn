@@ -34,16 +34,17 @@ import (
 )
 
 const (
+	// NonceSize is nounce size
 	NonceSize       = 8
 	NonceBucketSize = 256
 	TagSize         = poly1305.TagSize
 	// S20BS is ChaCha20's internal blocksize in bytes
 	S20BS = 64
-	// Maximal amount of bytes transfered with single key (4 GiB)
+	// MaxBytesPerKey maximal amount of bytes transfered with single key (4 GiB)
 	MaxBytesPerKey uint64 = 1 << 32
 	// Heartbeat rate, relative to Timeout
 	TimeoutHeartbeat = 4
-	// Minimal valid packet length
+	// MinPktLength minimal valid packet length
 	MinPktLength = 1 + 16 + 8
 	// Padding byte
 	PadByte = byte(0x80)
@@ -73,6 +74,7 @@ func newNonces(key *[32]byte, i uint64) chan *[NonceSize]byte {
 	return nonces
 }
 
+// Peer is a GoVPN peer (client)
 type Peer struct {
 	// Statistics (they are at the beginning for correct int64 alignment)
 	BytesIn         uint64
@@ -244,7 +246,7 @@ func newPeer(isClient bool, addr string, conn io.Writer, conf *PeerConf, key *[S
 	return &peer
 }
 
-// Process incoming Ethernet packet.
+// EthProcess process incoming Ethernet packet.
 // ready channel is TAPListen's synchronization channel used to tell him
 // that he is free to receive new packets. Encrypted and authenticated
 // packets will be sent to remote Peer side immediately.
@@ -302,6 +304,7 @@ func (p *Peer) EthProcess(data []byte) {
 	p.BusyT.Unlock()
 }
 
+// PktProcess process data of a single packet
 func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 	if len(data) < MinPktLength {
 		return false
@@ -409,6 +412,7 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 	return true
 }
 
+// PeerTapProcessor process a TUN/TAP peer
 func PeerTapProcessor(peer *Peer, tap *TAP, terminator chan struct{}) {
 	var data []byte
 	var now time.Time

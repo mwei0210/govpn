@@ -25,11 +25,10 @@ import (
 	"cypherpunks.ru/govpn/cnw"
 )
 
-const (
-	EnclessEnlargeSize = aont.HSize + aont.RSize*cnw.EnlargeFactor
-)
+// EnclessEnlargeSize TODO
+const EnclessEnlargeSize = aont.HSize + aont.RSize*cnw.EnlargeFactor
 
-// Confidentiality preserving (but encryptionless) encoding.
+// EnclessEncode is a confidentiality preserving (but encryptionless) encoding.
 //
 // It uses Chaffing-and-Winnowing technology (it is neither
 // encryption nor steganography) over All-Or-Nothing-Transformed data.
@@ -53,7 +52,7 @@ func EnclessEncode(authKey *[32]byte, nonce *[16]byte, in []byte) ([]byte, error
 	return out, nil
 }
 
-// Decode EnclessEncode-ed data.
+// EnclessDecode decode EnclessEncode-ed data.
 func EnclessDecode(authKey *[32]byte, nonce *[16]byte, in []byte) ([]byte, error) {
 	var err error
 	winnowed, err := cnw.Winnow(

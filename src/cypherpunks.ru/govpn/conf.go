@@ -24,6 +24,7 @@ import (
 	"github.com/agl/ed25519"
 )
 
+// PeerConf is configuration of a single GoVPN Peer (client)
 type PeerConf struct {
 	ID          *PeerID       `yaml:"-"`
 	Name        string        `yaml:"name"`

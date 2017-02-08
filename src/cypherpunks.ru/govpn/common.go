@@ -28,18 +28,21 @@ import (
 const (
 	TimeoutDefault = 60
 	EtherSize      = 14
-	MTUMax         = 9000 + EtherSize + 1
-	MTUDefault     = 1500 + EtherSize + 1
+	// MTUMax is maximum MTU size of ethernet packet
+	MTUMax = 9000 + EtherSize + 1
+	// MTUDefault is default MTU size of ethernet packet
+	MTUDefault = 1500 + EtherSize + 1
 
 	ENV_IFACE  = "GOVPN_IFACE"
 	ENV_REMOTE = "GOVPN_REMOTE"
 )
 
 var (
+	// Version hold release string set at build time
 	Version string
 )
 
-// Call external program/script.
+// ScriptCall call external program/script.
 // You have to specify path to it and (inteface name as a rule) something
 // that will be the first argument when calling it. Function will return
 // it's output and possible error.

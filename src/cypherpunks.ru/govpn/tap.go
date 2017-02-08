@@ -22,6 +22,7 @@ import (
 	"io"
 )
 
+// TAP is a TUN or a TAP interface.
 type TAP struct {
 	Name string
 	Sink chan []byte
@@ -32,6 +33,7 @@ var (
 	taps = make(map[string]*TAP)
 )
 
+// NewTAP create a new TUN/TAP virtual interface
 func NewTAP(ifaceName string, mtu int) (*TAP, error) {
 	tapRaw, err := newTAPer(ifaceName)
 	if err != nil {
@@ -70,6 +72,7 @@ func (t *TAP) Write(data []byte) (n int, err error) {
 	return t.dev.Write(data)
 }
 
+// TAPListen open an existing TAP, if none exists, open one
 func TAPListen(ifaceName string, mtu int) (*TAP, error) {
 	tap, exists := taps[ifaceName]
 	if exists {

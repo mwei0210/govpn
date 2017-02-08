@@ -29,6 +29,7 @@ const (
 	RWTimeout = 10 * time.Second
 )
 
+// KnownPeers map of all connected GoVPN peers
 type KnownPeers map[string]**Peer
 
 // StatsProcessor is assumed to be run in background. It accepts
