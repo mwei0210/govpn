@@ -26,12 +26,12 @@ import (
 	"github.com/songgao/water"
 )
 
-func newTAPer(ifaceName string) (io.ReadWriteCloser, error) {
-	if !strings.HasPrefix(ifaceName, interfaceTun) {
-		return nil, errors.Wrap(errUnsupportedInterface, ifaceName)
+func newTAPer(ifaceName *string) (io.ReadWriteCloser, error) {
+	if !strings.HasPrefix(*ifaceName, interfaceTun) {
+		return nil, errors.Wrap(errUnsupportedInterface, *ifaceName)
 	}
-	if ifaceName != interfaceTun {
-		return nil, errors.Errorf("Darwin don't allow to set an interface name, only %q is supported", ifaceName)
+	if *ifaceName != interfaceTun {
+		return nil, errors.Errorf("Darwin don't allow to set an interface name, only %q is supported", *ifaceName)
 	}
 	output, err := water.New(water.Config{DeviceType: water.TUN})
 	return output, errors.Wrap(err, "water.New")
