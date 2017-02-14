@@ -39,22 +39,16 @@ type syslogFormatter struct{}
 
 // Format converts a log entry into a list of bytes
 func (sf *syslogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	buf := bytes.NewBuffer(nil)
-	var (
-		err   error
-		index int
-	)
-	keys := make([]string, len(entry.Data))
+	var buf bytes.Buffer
+	var err error
+	keys := make([]string, 0, len(entry.Data))
 	for k := range entry.Data {
-		keys[index] = k
-		index++
+		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 
-	for index = range keys {
-		k := keys[index]
-		v := entry.Data[k]
-		if _, err = buf.WriteString(fmt.Sprintf("[%s]%+v ", k, v)); err != nil {
+	for _, k := range keys {
+		if _, err = buf.WriteString(fmt.Sprintf("[%s]%+v ", k, entry.Data[k])); err != nil {
 			return nil, errors.Wrapf(err, "buf.WriteString %s", k)
 		}
 	}
