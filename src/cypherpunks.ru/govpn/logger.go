@@ -34,11 +34,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-// syslogFormatter is a formatter that is syslog friendly
-type syslogFormatter struct {
-}
+// syslogFormatter is a syslog friendly formatter
+type syslogFormatter struct{}
 
-// Format convert a log entry into a list of bytes
+// Format converts a log entry into a list of bytes
 func (sf *syslogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
 	var (
@@ -65,7 +64,7 @@ func (sf *syslogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// NewLogger return a logger for specified level. Syslog or Windows Events can be turned on.
+// NewLogger returns a logger for specified level. Syslog or Windows Events can be turned on.
 func NewLogger(level string, syslog bool) (*logrus.Logger, error) {
 	var logger *logrus.Logger
 	logLevel, err := logrus.ParseLevel(level)
@@ -105,7 +104,7 @@ func NewLogger(level string, syslog bool) (*logrus.Logger, error) {
 	return logger, nil
 }
 
-// ExtendLogFields add to existing fields a new batch of log Fields
+// ExtendLogFields adds batch of log Fields to existing fields ones
 func ExtendLogFields(input *logrus.Fields, add logrus.Fields) {
 	i := *input
 	for k, v := range add {
@@ -113,7 +112,7 @@ func ExtendLogFields(input *logrus.Fields, add logrus.Fields) {
 	}
 }
 
-// MergeLogFields combine multiple log fields into a single one
+// MergeLogFields combines multiple log fields into a single one
 func MergeLogFields(fields ...logrus.Fields) (output logrus.Fields) {
 	output = logrus.Fields{}
 	for _, f := range fields {
