@@ -33,9 +33,9 @@ import (
 )
 
 const (
-	// RSize TODO
+	// RSize is size in bytes of channel binding random value
 	RSize = 8
-	// SSize TODO
+	// SSize is size in bytes of shared secret half
 	SSize = 32
 )
 
@@ -119,7 +119,7 @@ func dhKeyGen(priv, pub *[32]byte) *[32]byte {
 	return &hashed
 }
 
-// NewHandshake create new handshake state.
+// NewHandshake creates new handshake state.
 func NewHandshake(addr string, conn io.Writer, conf *PeerConf) *Handshake {
 	state := Handshake{
 		addr:     addr,
@@ -148,8 +148,8 @@ func idTag(id *PeerID, timeSync int, data []byte) []byte {
 	return sum[len(sum)-8:]
 }
 
-// HandshakeStart start handshake's procedure from the client. It is the entry point
-// for starting the handshake procedure.
+// HandshakeStarts start handshake's procedure from the client.
+// It is the entry point for starting the handshake procedure.
 // First handshake packet will be sent immediately.
 func HandshakeStart(addr string, conn io.Writer, conf *PeerConf) *Handshake {
 	state := NewHandshake(addr, conn, conf)
@@ -182,7 +182,7 @@ func HandshakeStart(addr string, conn io.Writer, conf *PeerConf) *Handshake {
 	return state
 }
 
-// Server process handshake message on the server side.
+// Server processes handshake message on the server side.
 // This function is intended to be called on server's side.
 // If this is the final handshake message, then new Peer object
 // will be created and used as a transport. If no mutually
@@ -336,7 +336,7 @@ func (h *Handshake) Server(data []byte) *Peer {
 	return nil
 }
 
-// Client process handshake message on the client side.
+// Client processes handshake message on the client side.
 // This function is intended to be called on client's side.
 // If this is the final handshake message, then new Peer object
 // will be created and used as a transport. If no mutually

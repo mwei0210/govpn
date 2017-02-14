@@ -1,7 +1,8 @@
-// Package govpn is a simple secure, DPI/censorship-resistant free software VPN client and server.
+// Package govpn is a simple secure, DPI/censorship-resistant free
+// software VPN client and server.
 package govpn
 
-// Warranty is GoVPN license
+// Warranty is GoVPN warranty information
 const Warranty = `This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or

@@ -50,7 +50,7 @@ import (
 	"golang.org/x/crypto/poly1305"
 )
 
-// EnlargeFactor TODO
+// EnlargeFactor tells how many output bytes will produce single input byte
 const EnlargeFactor = 16 * poly1305.TagSize
 
 func zero(in []byte) {

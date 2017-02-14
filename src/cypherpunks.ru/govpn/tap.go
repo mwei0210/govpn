@@ -33,7 +33,7 @@ var (
 	taps = make(map[string]*TAP)
 )
 
-// NewTAP create a new TUN/TAP virtual interface
+// NewTAP creates a new TUN/TAP virtual interface
 func NewTAP(ifaceName string, mtu int) (*TAP, error) {
 	tapRaw, err := newTAPer(ifaceName)
 	if err != nil {
@@ -72,7 +72,7 @@ func (t *TAP) Write(data []byte) (n int, err error) {
 	return t.dev.Write(data)
 }
 
-// TAPListen open an existing TAP, if none exists, open one
+// TAPListen opens an existing TAP (creates if none exists)
 func TAPListen(ifaceName string, mtu int) (*TAP, error) {
 	tap, exists := taps[ifaceName]
 	if exists {

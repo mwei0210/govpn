@@ -36,15 +36,15 @@ import (
 )
 
 const (
-	// DefaultS default Balloon space cost
+	// DefaultS is default Balloon space cost
 	DefaultS = 1 << 20 / 32
-	// DefaultT default Balloon time cost
+	// DefaultT is default Balloon time cost
 	DefaultT = 1 << 4
-	// DefaultP default Balloon number of job
+	// DefaultP is default Balloon number of jobs
 	DefaultP = 2
 )
 
-// Verifier is used to verify a peer
+// Verifier is used to authenticate a peer
 type Verifier struct {
 	S   int
 	T   int
@@ -53,8 +53,8 @@ type Verifier struct {
 	Pub *[ed25519.PublicKeySize]byte
 }
 
-// VerifierNew generate new verifier for given peer, with specified password and
-// hashing parameters.
+// VerifierNew generates new verifier for given peer,
+// with specified password and hashing parameters.
 func VerifierNew(s, t, p int, id *PeerID) *Verifier {
 	return &Verifier{S: s, T: t, P: p, ID: id}
 }
@@ -67,8 +67,8 @@ func blake2bKeyless() hash.Hash {
 	return h
 }
 
-// PasswordApply apply the password: create Ed25519 keypair based on it, save public
-// key in verifier.
+// PasswordApply applies the password: create Ed25519 keypair based on it,
+// saves public key in verifier.
 func (v *Verifier) PasswordApply(password string) *[ed25519.PrivateKeySize]byte {
 	r := balloon.H(blake2bKeyless, []byte(password), v.ID[:], v.S, v.T, v.P)
 	defer SliceZero(r)
@@ -81,7 +81,7 @@ func (v *Verifier) PasswordApply(password string) *[ed25519.PrivateKeySize]byte 
 	return prv
 }
 
-// VerifierFromString parse either short or long verifier form.
+// VerifierFromString parses either short or long verifier form.
 func VerifierFromString(input string) (*Verifier, error) {
 	ss := strings.Split(input, "$")
 	if len(ss) < 4 || ss[1] != "balloon" {
@@ -112,8 +112,8 @@ func VerifierFromString(input string) (*Verifier, error) {
 	return &v, nil
 }
 
-// ShortForm short verifier string form -- it is useful for the client.
-// Does not include public key.
+// ShortForm outputs the short verifier string form -- it is useful
+// for the client. It does not include public key.
 func (v *Verifier) ShortForm() string {
 	return fmt.Sprintf(
 		"$balloon$s=%d,t=%d,p=%d$%s",
@@ -121,8 +121,8 @@ func (v *Verifier) ShortForm() string {
 	)
 }
 
-// LongForm long verifier string form -- it is useful for the server.
-// Includes public key.
+// LongForm outputs long verifier string form -- it is useful for the server.
+// It includes public key.
 func (v *Verifier) LongForm() string {
 	return fmt.Sprintf(
 		"%s$%s", v.ShortForm(),
@@ -130,7 +130,7 @@ func (v *Verifier) LongForm() string {
 	)
 }
 
-// KeyRead read the key either from text file (if path is specified), or
+// KeyRead reads the key either from text file (if path is specified), or
 // from the terminal.
 func KeyRead(path string) (string, error) {
 	var p []byte

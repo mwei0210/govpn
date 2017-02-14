@@ -27,7 +27,7 @@ import (
 // Rand is a source of entropy
 var Rand = rand.Reader
 
-// EGDRand is a EGD source of entropy
+// EGDRand is a EGD (Entropy Gathering Daemon) source of entropy
 type EGDRand string
 
 // Read n bytes from EGD, blocking mode.
@@ -41,7 +41,7 @@ func (egdPath EGDRand) Read(b []byte) (int, error) {
 	return io.ReadFull(conn, b)
 }
 
-// EGDInit set random source to a EGD socket
+// EGDInit sets random source to a EGD socket
 func EGDInit(path string) {
 	Rand = EGDRand(path)
 }

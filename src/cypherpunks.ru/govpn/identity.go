@@ -30,18 +30,18 @@ import (
 	"golang.org/x/crypto/blake2b"
 )
 
-// IDSize is size a GoVPN peer ID must be
+// IDSize is a size of GoVPN peer's identity
 const IDSize = 128 / 8
 
 // PeerID is identifier of a single GoVPN peer (client)
 type PeerID [IDSize]byte
 
-// String return a string from a peer ID
+// String returns peer's ID in stringified form
 func (id PeerID) String() string {
 	return base64.RawStdEncoding.EncodeToString(id[:])
 }
 
-// MarshalJSON return a JSON string from a peer ID
+// MarshalJSON returns a JSON serialized peer's ID
 func (id PeerID) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + id.String() + `"`), nil
 }
@@ -53,18 +53,18 @@ type MACAndTimeSync struct {
 	l   sync.Mutex
 }
 
-// MACCache cache all MACAndTimeSync for peers allowed to connect
+// MACCache caches all MACAndTimeSync for peers allowed to connect
 type MACCache struct {
 	cache map[PeerID]*MACAndTimeSync
 	l     sync.RWMutex
 }
 
-// NewMACCache return a new MACCache instance
+// NewMACCache returns a new MACCache instance
 func NewMACCache() *MACCache {
 	return &MACCache{cache: make(map[PeerID]*MACAndTimeSync)}
 }
 
-// Update remove disappeared keys, add missing ones with initialized MACs.
+// Update removes disappeared keys, add missing ones with initialized MACs.
 func (mc *MACCache) Update(peers *map[PeerID]*PeerConf) {
 	mc.l.Lock()
 	for pid := range mc.cache {
@@ -91,7 +91,7 @@ func (mc *MACCache) Update(peers *map[PeerID]*PeerConf) {
 	mc.l.Unlock()
 }
 
-// AddTimeSync XOR timestamp with data if timeSync > 0
+// AddTimeSync XORs timestamp with data if timeSync > 0
 func AddTimeSync(ts int, data []byte) {
 	if ts == 0 {
 		return
@@ -103,7 +103,7 @@ func AddTimeSync(ts int, data []byte) {
 	}
 }
 
-// Find try to find peer's identity (that equals to MAC)
+// Find tries to find peer's identity (that equals to MAC)
 // by taking first blocksize sized bytes from data at the beginning
 // as plaintext and last bytes as cyphertext.
 func (mc *MACCache) Find(data []byte) *PeerID {

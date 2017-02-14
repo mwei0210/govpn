@@ -28,9 +28,9 @@ import (
 const (
 	TimeoutDefault = 60
 	EtherSize      = 14
-	// MTUMax is maximum MTU size of ethernet packet
+	// MTUMax is maximum MTU size of Ethernet packet
 	MTUMax = 9000 + EtherSize + 1
-	// MTUDefault is default MTU size of ethernet packet
+	// MTUDefault is default MTU size of Ethernet packet
 	MTUDefault = 1500 + EtherSize + 1
 
 	ENV_IFACE  = "GOVPN_IFACE"
@@ -38,11 +38,11 @@ const (
 )
 
 var (
-	// Version hold release string set at build time
+	// Version holds release string set at build time
 	Version string
 )
 
-// ScriptCall call external program/script.
+// ScriptCall calls external program/script.
 // You have to specify path to it and (inteface name as a rule) something
 // that will be the first argument when calling it. Function will return
 // it's output and possible error.

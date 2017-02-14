@@ -25,10 +25,10 @@ import (
 	"cypherpunks.ru/govpn/cnw"
 )
 
-// EnclessEnlargeSize TODO
+// EnclessEnlargeSize is number of bytes overhead for each message
 const EnclessEnlargeSize = aont.HSize + aont.RSize*cnw.EnlargeFactor
 
-// EnclessEncode is a confidentiality preserving (but encryptionless) encoding.
+// EnclessEncode is encryptionless, but confidentiality preserving encoding.
 //
 // It uses Chaffing-and-Winnowing technology (it is neither
 // encryption nor steganography) over All-Or-Nothing-Transformed data.
@@ -52,7 +52,7 @@ func EnclessEncode(authKey *[32]byte, nonce *[16]byte, in []byte) ([]byte, error
 	return out, nil
 }
 
-// EnclessDecode decode EnclessEncode-ed data.
+// EnclessDecode decodes EnclessEncode-ed data.
 func EnclessDecode(authKey *[32]byte, nonce *[16]byte, in []byte) ([]byte, error) {
 	var err error
 	winnowed, err := cnw.Winnow(
