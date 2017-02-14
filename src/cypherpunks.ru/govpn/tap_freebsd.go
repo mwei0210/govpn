@@ -15,7 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func newTAPer(ifaceName string) (io.ReadWriteCloser, error) {
-	output, err := os.OpenFile(path.Join("/dev/", ifaceName), os.O_RDWR, os.ModePerm)
+func newTAPer(ifaceName *string) (io.ReadWriteCloser, error) {
+	output, err := os.OpenFile(path.Join("/dev/", *ifaceName), os.O_RDWR, os.ModePerm)
 	return output, errors.Wrap(err, "os.OpenFile")
 }
