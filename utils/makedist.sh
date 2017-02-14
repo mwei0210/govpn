@@ -44,7 +44,7 @@ You can obtain releases source code prepared tarballs on
 @url{http://www.govpn.info/}.
 EOF
 make -C doc
-./utils/news.sh
+/bin/sh utils/news.sh
 rm -r doc/.well-known doc/govpn.html/.well-known utils/news.sh
 
 rm utils/makedist.sh
