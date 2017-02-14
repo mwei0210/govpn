@@ -1,6 +1,13 @@
 @node Новости
 @section Новости
 
+@node Релиз 7.2
+@subsection Релиз 7.2
+@itemize
+@item Исправлена фатальная ошибка в коде генерирования nonce-ов,
+появившаяся в версии 7.1. Всем @strong{необходимо} обновиться.
+@end itemize
+
 @node Релиз 7.1
 @subsection Релиз 7.1
 @itemize

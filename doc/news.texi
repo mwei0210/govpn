@@ -3,6 +3,13 @@
 
 See also this page @ref{Новости, on russian}.
 
+@node Release 7.2
+@section Release 7.2
+@itemize
+@item Fixed fatal bug in nonce generation code, appeared in 7.1 version.
+Everyone @strong{have to} update.
+@end itemize
+
 @node Release 7.1
 @section Release 7.1
 @itemize

@@ -18,6 +18,10 @@ Tarballs include all necessary required libraries:
 @multitable {XXXXX} {XXXX KiB} {link sign} {xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx}
 @headitem Version @tab Size @tab Tarball @tab SHA256 checksum
 
+@item @ref{Release 7.1, 7.1} @tab 289 KiB
+@tab @url{download/govpn-7.1.tar.xz, link} @url{download/govpn-7.1.tar.xz.sig, sign}
+@tab @code{DB656A87 508D6902 B9C8964D C20937BF C95E1E78 1998311F F8F85A95 F64862BB}
+
 @item @ref{Release 7.0, 7.0} @tab 287 KiB
 @tab @url{download/govpn-7.0.tar.xz, link} @url{download/govpn-7.0.tar.xz.sig, sign}
 @tab @code{DF85E42D F1228E8C FA5D582D AEF90553 23033630 E12B0B26 D7DEFBEB B25DBC4C}

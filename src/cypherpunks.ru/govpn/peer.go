@@ -63,7 +63,7 @@ func newNonces(key *[32]byte, i uint64) chan *[NonceSize]byte {
 			buf := new([NonceSize]byte)
 			binary.BigEndian.PutUint64(buf[:], i)
 			mac.Write(buf[:])
-			mac.Sum(sum[0:])
+			mac.Sum(sum[:0])
 			copy(buf[:], sum)
 			nonces <- buf
 			mac.Reset()
