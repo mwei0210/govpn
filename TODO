@@ -1,3 +1,5 @@
+* Reload configuration on HUP signal receiving
+* Forcefully disconnect disappeared (from configuration file) peers
 * When govpn-server opens TAP files, then it won't release them until
   daemon itself is exited
 * Randomize ports usage
