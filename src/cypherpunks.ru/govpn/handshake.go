@@ -163,15 +163,13 @@ func idTag(id *PeerID, timeSync int, data []byte) ([]byte, error) {
 	return sum[len(sum)-8:], nil
 }
 
-// HandshakeStarts start handshake's procedure from the client.
+// HandshakeStarts starts handshake's procedure from the client.
 // It is the entry point for starting the handshake procedure.
 // First handshake packet will be sent immediately.
 func HandshakeStart(addr string, conn io.Writer, conf *PeerConf) (*Handshake, error) {
 	state := NewHandshake(addr, conn, conf)
-	var (
-		dhPubRepr *[32]byte
-		err       error
-	)
+	var dhPubRepr *[32]byte
+	var err error
 	if state.dhPriv, dhPubRepr, err = dhKeypairGen(); err != nil {
 		return nil, errors.Wrap(err, "dhKeypairGen")
 	}

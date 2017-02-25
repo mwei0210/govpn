@@ -146,12 +146,12 @@ func SliceZero(data []byte) {
 	}
 }
 
-// VersionGet return version of GoVPN
+// VersionGet returns version of GoVPN
 func VersionGet() string {
 	return "GoVPN version " + Version + " built with " + runtime.Version()
 }
 
-// CatchSignalShutdown return a channel.
+// CatchSignalShutdown returns a channel.
 // that channel will get a SIG_INT or SIG_KILL signal is received
 // this is intended to be used to stop a client/server
 func CatchSignalShutdown() chan interface{} {

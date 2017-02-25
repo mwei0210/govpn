@@ -58,7 +58,8 @@ func (sf *syslogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// NewLogger returns a logger for specified level. Syslog or Windows Events can be turned on.
+// NewLogger returns a logger for specified level. Syslog or Windows
+// Events can be turned on.
 func NewLogger(level string, syslog bool) (*logrus.Logger, error) {
 	var logger *logrus.Logger
 	logLevel, err := logrus.ParseLevel(level)

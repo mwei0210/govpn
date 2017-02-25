@@ -139,7 +139,8 @@ type Peer struct {
 	noncesT  chan *[NonceSize]byte
 }
 
-// LogFields return a logrus compatible Fields to identity a single peer in logs
+// LogFields returns a logrus compatible Fields to identity a single
+// peer in logs
 func (p *Peer) LogFields() logrus.Fields {
 	return logrus.Fields{
 		logPrefixPeer + "addr":        p.Addr,
@@ -149,8 +150,9 @@ func (p *Peer) LogFields() logrus.Fields {
 	}
 }
 
-// ConfigurationLogFields return a logrus compatible Fields with the settings of
-// a single peer. Complement LogFields() for extra debugging details.
+// ConfigurationLogFields returns a logrus compatible Fields with the
+// settings of a single peer. Complement LogFields() for extra debugging
+// details.
 func (p *Peer) ConfigurationLogFields() logrus.Fields {
 	return logrus.Fields{
 		logPrefixPeer + "timeout":  p.Timeout.String(),
