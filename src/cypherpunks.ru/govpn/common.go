@@ -182,6 +182,6 @@ func SetLogger(l *logrus.Logger) {
 // CloseLog log an error if a io.Closer fail to Close
 func CloseLog(c io.Closer, l *logrus.Logger, fields logrus.Fields) {
 	if err := c.Close(); err != nil {
-		logrus.WithFields(fields).WithError(err).Error("Couldn't close connection")
+		logrus.WithFields(fields).WithError(err).Error("Can't close connection")
 	}
 }

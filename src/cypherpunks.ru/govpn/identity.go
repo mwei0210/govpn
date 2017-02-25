@@ -179,6 +179,6 @@ func (mc *MACCache) Find(data []byte) (*PeerID, error) {
 
 		logger.WithFields(fields).WithFields(loopFields).Debug("Not matching peer")
 	}
-	logger.WithFields(fields).Debug("Couldn't find matching peer ID")
+	logger.WithFields(fields).Debug("Can't find matching peer ID")
 	return nil, nil
 }

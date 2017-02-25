@@ -71,7 +71,7 @@ func main() {
 
 	logger, err := govpn.NewLogger(*logLevel, *syslog)
 	if err != nil {
-		logrus.WithFields(fields).WithError(err).Fatal("Couldn't initialize logging")
+		logrus.WithFields(fields).WithError(err).Fatal("Can't initialize logging")
 	}
 
 	if *egdPath != "" {
