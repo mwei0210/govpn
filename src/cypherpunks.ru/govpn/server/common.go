@@ -42,7 +42,12 @@ func (s *Server) callUp(peer *govpn.Peer, proto govpn.Protocol) (*govpn.TAP, err
 	fields["func"] = logFuncPrefix + "Server.callUp"
 
 	if !isConfigIface && conf.PreUp == nil {
-		return nil, errors.Wrapf(errMisconfiguredTap, "interface:%q, PreUp:%q", conf.Iface, conf.PreUp)
+		return nil, errors.Wrapf(
+			errMisconfiguredTap,
+			"interface:%q, PreUp:%q",
+			conf.Iface,
+			conf.PreUp,
+		)
 	}
 
 	if conf.PreUp != nil {

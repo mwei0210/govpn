@@ -125,7 +125,12 @@ func confRefresh() error {
 		return errors.Wrap(err, "confRead")
 	}
 	confs = *newConfs
-	logger.WithFields(fields).WithField("newConfs", len(confs)).Debug("idsCache.Update")
+	logger.WithFields(
+		fields,
+	).WithField(
+		"newConfs",
+		len(confs),
+	).Debug("idsCache.Update")
 	if err = idsCache.Update(newConfs); err != nil {
 		return errors.Wrap(err, "idsCache.Update")
 	}
@@ -138,13 +143,17 @@ func confInit() {
 	err := confRefresh()
 	fields := logrus.Fields{"func": "confInit"}
 	if err != nil {
-		logger.WithError(err).WithFields(fields).Fatal("Couldn't perform initial configuration read")
+		logger.WithError(err).WithFields(
+			fields,
+		).Fatal("Couldn't perform initial configuration read")
 	}
 	go func() {
 		for {
 			time.Sleep(refreshRate)
 			if err = confRefresh(); err != nil {
-				logger.WithError(err).WithFields(fields).Error("Couldn't refresh configuration")
+				logger.WithError(err).WithFields(
+					fields,
+				).Error("Couldn't refresh configuration")
 			}
 		}
 	}()

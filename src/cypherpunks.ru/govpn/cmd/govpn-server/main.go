@@ -58,12 +58,18 @@ func main() {
 
 	logger, err = govpn.NewLogger(*logLevel, *syslog)
 	if err != nil {
-		logrus.WithFields(fields).WithError(err).Fatal("Couldn't initialize logging")
+		logrus.WithFields(
+			fields,
+		).WithError(err).Fatal("Couldn't initialize logging")
 	}
 	govpn.SetLogger(logger)
 
 	if *egdPath != "" {
-		logger.WithField("egd_path", *egdPath).WithFields(fields).Debug("Init EGD")
+		logger.WithField(
+			"egd_path", *egdPath,
+		).WithFields(
+			fields,
+		).Debug("Init EGD")
 		govpn.EGDInit(*egdPath)
 	}
 
@@ -75,13 +81,23 @@ func main() {
 		Timeout:      govpn.TimeoutDefault,
 	}
 	if serverConfig.Protocol, err = govpn.NewProtocolFromString(*proto); err != nil {
-		logger.WithError(err).WithFields(fields).WithField("proto", *proto).Fatal("Invalid protocol")
+		logger.WithError(err).WithFields(
+			fields,
+		).WithField(
+			"proto", *proto,
+		).Fatal("Invalid protocol")
 	}
 	if err = serverConfig.Validate(); err != nil {
 		logger.WithError(err).WithFields(fields).Fatal("Invalid configuration")
 	}
 
-	srv := server.NewServer(serverConfig, confs, idsCache, logger, govpn.CatchSignalShutdown())
+	srv := server.NewServer(
+		serverConfig,
+		confs,
+		idsCache,
+		logger,
+		govpn.CatchSignalShutdown(),
+	)
 
 	if *stats != "" {
 		go govpn.StatsProcessor(*stats, srv.KnownPeers())

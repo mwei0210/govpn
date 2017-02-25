@@ -48,7 +48,11 @@ type Configuration struct {
 // Validate returns an error if a configuration is invalid
 func (c *Configuration) Validate() error {
 	if c.Peer.MTU > govpn.MTUMax {
-		return errors.Errorf("Invalid MTU %d, maximum allowable is %d", c.Peer.MTU, govpn.MTUMax)
+		return errors.Errorf(
+			"Invalid MTU %d, maximum allowable is %d",
+			c.Peer.MTU,
+			govpn.MTUMax,
+		)
 	}
 	if len(c.RemoteAddress) == 0 {
 		return errors.New("Missing RemoteAddress")
@@ -78,7 +82,9 @@ func (c *Configuration) LogFields() logrus.Fields {
 		f[prefix+"proxy"] = c.ProxyAddress
 	}
 	if c.FileDescriptor > 0 {
-		f[prefix+"remote"] = fmt.Sprintf("fd:%d(%s)", c.FileDescriptor, c.RemoteAddress)
+		f[prefix+"remote"] = fmt.Sprintf(
+			"fd:%d(%s)", c.FileDescriptor, c.RemoteAddress,
+		)
 	} else {
 		f[prefix+"remote"] = c.RemoteAddress
 	}
@@ -154,7 +160,11 @@ func (c *Client) KnownPeers() *govpn.KnownPeers {
 func (c *Client) MainCycle() {
 	var err error
 	l := c.logger.WithFields(logrus.Fields{"func": logFuncPrefix + "Client.MainCycle"})
-	l.WithFields(c.LogFields()).WithFields(c.config.LogFields()).Info("Starting...")
+	l.WithFields(
+		c.LogFields(),
+	).WithFields(
+		c.config.LogFields(),
+	).Info("Starting...")
 
 	// if available, run PreUp, it might create interface
 	if c.config.Peer.PreUp != nil {

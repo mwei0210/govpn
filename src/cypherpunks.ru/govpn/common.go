@@ -140,7 +140,9 @@ func NewProtocolFromString(p string) (Protocol, error) {
 		index++
 	}
 
-	return Protocol(-1), errors.Errorf("Invalid protocol %q: %s", p, strings.Join(choices, ","))
+	return Protocol(-1), errors.Errorf(
+		"Invalid protocol %q: %s", p, strings.Join(choices, ","),
+	)
 }
 
 // SliceZero zeros each byte.

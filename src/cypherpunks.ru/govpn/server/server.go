@@ -28,12 +28,14 @@ import (
 	"cypherpunks.ru/govpn"
 )
 
-// PeerConfigurer is used by a GoVPN server to figure the configuration of a single peer
+// PeerConfigurer is used by a GoVPN server to figure the configuration
+// of a single peer
 type PeerConfigurer interface {
 	Get(govpn.PeerID) *govpn.PeerConf
 }
 
-// MACPeerFinder is used by GoVPN server to figure the PeerID from handshake data
+// MACPeerFinder is used by GoVPN server to figure the PeerID from
+// handshake data
 type MACPeerFinder interface {
 	Find([]byte) (*govpn.PeerID, error)
 }
@@ -117,7 +119,8 @@ func (s *Server) KnownPeers() *govpn.KnownPeers {
 	return &s.knownPeers
 }
 
-// NewServer return a configured GoVPN server, to listen network connection MainCycle must be executed
+// NewServer return a configured GoVPN server, to listen network
+// connection MainCycle must be executed
 func NewServer(serverConf Configuration, peerConfs PeerConfigurer, idsCache MACPeerFinder, logger *logrus.Logger, termSignal chan interface{}) *Server {
 	govpn.SetLogger(logger)
 	return &Server{
@@ -154,7 +157,13 @@ func (s *Server) MainCycle() {
 	}
 	fields := logrus.Fields{"func": logFuncPrefix + "Server.MainCycle"}
 
-	s.logger.WithFields(fields).WithFields(s.LogFields()).WithFields(s.configuration.LogFields()).Info("Starting...")
+	s.logger.WithFields(
+		fields,
+	).WithFields(
+		s.LogFields(),
+	).WithFields(
+		s.configuration.LogFields(),
+	).Info("Starting...")
 
 	var needsDeletion bool
 	var err error
@@ -165,13 +174,27 @@ MainCycle:
 	for {
 		select {
 		case <-s.termSignal:
-			s.logger.WithFields(fields).WithFields(s.LogFields()).WithFields(s.configuration.LogFields()).Info("Terminating")
+			s.logger.WithFields(
+				fields,
+			).WithFields(
+				s.LogFields(),
+			).WithFields(
+				s.configuration.LogFields(),
+			).Info("Terminating")
 			for _, ps := range s.peers {
 				if err = s.callDown(ps); err != nil {
-					s.logger.WithFields(fields).WithError(err).WithFields(ps.peer.LogFields()).Error("Failed to run callDown")
+					s.logger.WithFields(
+						fields,
+					).WithError(err).WithFields(
+						ps.peer.LogFields(),
+					).Error("Failed to run callDown")
 				}
 				if err = ps.tap.Close(); err != nil {
-					logrus.WithError(err).WithFields(fields).WithFields(ps.peer.LogFields()).Error("Couldn't close TAP")
+					logrus.WithError(err).WithFields(
+						fields,
+					).WithFields(
+						ps.peer.LogFields(),
+					).Error("Couldn't close TAP")
 				}
 			}
 			// empty value signals that everything is fine
@@ -183,7 +206,11 @@ MainCycle:
 			s.hsLock.Lock()
 			for addr, hs := range s.handshakes {
 				if hs.LastPing.Add(s.configuration.Timeout).Before(now) {
-					logrus.WithFields(fields).WithFields(hs.LogFields()).Debug("handshake is expired, delete")
+					logrus.WithFields(
+						fields,
+					).WithFields(
+						hs.LogFields(),
+					).Debug("handshake is expired, delete")
 					hs.Zero()
 					delete(s.handshakes, addr)
 				}
@@ -193,18 +220,32 @@ MainCycle:
 			s.kpLock.Lock()
 			for addr, ps := range s.peers {
 				ps.peer.BusyR.Lock()
-				needsDeletion = ps.peer.LastPing.Add(s.configuration.Timeout).Before(now)
+				needsDeletion = ps.peer.LastPing.Add(
+					s.configuration.Timeout,
+				).Before(now)
 				ps.peer.BusyR.Unlock()
 				if needsDeletion {
-					logrus.WithFields(fields).WithFields(ps.peer.LogFields()).Info("Delete peer")
+					logrus.WithFields(
+						fields,
+					).WithFields(
+						ps.peer.LogFields(),
+					).Info("Delete peer")
 					delete(s.peers, addr)
 					delete(s.knownPeers, addr)
 					delete(s.peersByID, *ps.peer.ID)
 					if err = s.callDown(ps); err != nil {
-						logrus.WithError(err).WithFields(fields).WithFields(ps.peer.LogFields()).Error("Couldn't execute callDown")
+						logrus.WithError(err).WithFields(
+							fields,
+						).WithFields(
+							ps.peer.LogFields(),
+						).Error("Couldn't execute callDown")
 					}
 					if err = ps.tap.Close(); err != nil {
-						logrus.WithError(err).WithFields(fields).WithFields(ps.peer.LogFields()).Error("Couldn't close TAP")
+						logrus.WithError(err).WithFields(
+							fields,
+						).WithFields(
+							ps.peer.LogFields(),
+						).Error("Couldn't close TAP")
 					}
 					ps.terminator <- struct{}{}
 				}

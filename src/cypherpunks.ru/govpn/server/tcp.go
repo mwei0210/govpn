@@ -44,12 +44,22 @@ func (s *Server) startTCP() {
 		"func": logFuncPrefix + "Server.startTCP",
 		"bind": bind.String(),
 	}
-	s.logger.WithFields(fields).WithFields(s.LogFields()).WithFields(s.configuration.LogFields()).Info("Listen")
+	s.logger.WithFields(
+		fields,
+	).WithFields(
+		s.LogFields(),
+	).WithFields(
+		s.configuration.LogFields(),
+	).Info("Listen")
 	go func() {
 		for {
 			conn, err := listener.AcceptTCP()
 			if err != nil {
-				s.logger.WithError(err).WithFields(fields).WithFields(s.LogFields()).Error("Failed to accept TCP connection")
+				s.logger.WithError(err).WithFields(
+					fields,
+				).WithFields(
+					s.LogFields(),
+				).Error("Failed to accept TCP connection")
 				continue
 			}
 			go s.handleTCP(conn)
@@ -86,13 +96,23 @@ func (s *Server) handleTCP(conn net.Conn) {
 		}
 		n, err = conn.Read(buf[prev:])
 		if err != nil {
-			s.logger.WithFields(fields).WithFields(s.LogFields()).WithError(err).Debug("Can't read connection: either EOFed or timeouted")
+			s.logger.WithFields(
+				fields,
+			).WithFields(
+				s.LogFields(),
+			).WithError(
+				err,
+			).Debug("Can't read connection: either EOFed or timeouted")
 			break
 		}
 		prev += n
 		peerID, err := s.idsCache.Find(buf[:prev])
 		if err != nil {
-			s.logger.WithFields(fields).WithFields(s.LogFields()).WithError(err).Debug("Couldn't lookup for peer in ids")
+			s.logger.WithFields(
+				fields,
+			).WithFields(
+				s.LogFields(),
+			).WithError(err).Debug("Couldn't lookup for peer in ids")
 			continue
 		}
 		if peerID == nil {
@@ -102,14 +122,24 @@ func (s *Server) handleTCP(conn net.Conn) {
 		if hs == nil {
 			conf = s.confs.Get(*peerID)
 			if conf == nil {
-				s.logger.WithFields(fields).WithFields(s.LogFields()).WithFields(s.configuration.LogFields()).Error("Configuration get failed")
+				s.logger.WithFields(
+					fields,
+				).WithFields(
+					s.LogFields(),
+				).WithFields(
+					s.configuration.LogFields(),
+				).Error("Configuration get failed")
 				break
 			}
 			hs = govpn.NewHandshake(addr, conn, conf)
 		}
 		peer, err = hs.Server(buf[:prev])
 		if err != nil {
-			s.logger.WithFields(fields).WithError(err).WithFields(s.LogFields()).Error("Can't create new peer")
+			s.logger.WithFields(
+				fields,
+			).WithError(err).WithFields(
+				s.LogFields(),
+			).Error("Can't create new peer")
 			continue
 		}
 		prev = 0
@@ -117,7 +147,13 @@ func (s *Server) handleTCP(conn net.Conn) {
 			continue
 		}
 
-		s.logger.WithFields(fields).WithFields(s.LogFields()).WithFields(peer.LogFields()).Info("Handshake completed")
+		s.logger.WithFields(
+			fields,
+		).WithFields(
+			s.LogFields(),
+		).WithFields(
+			peer.LogFields(),
+		).Info("Handshake completed")
 
 		hs.Zero()
 		s.peersByIDLock.RLock()
@@ -145,11 +181,23 @@ func (s *Server) handleTCP(conn net.Conn) {
 			s.peersLock.Unlock()
 			s.peersByIDLock.Unlock()
 			s.kpLock.Unlock()
-			s.logger.WithFields(fields).WithFields(s.LogFields()).WithFields(peer.LogFields()).Debug("Rehandshake completed")
+			s.logger.WithFields(
+				fields,
+			).WithFields(
+				s.LogFields(),
+			).WithFields(
+				peer.LogFields(),
+			).Debug("Rehandshake completed")
 		} else {
 			tap, err = s.callUp(peer, govpn.ProtocolTCP)
 			if err != nil {
-				s.logger.WithFields(fields).WithFields(s.LogFields()).WithFields(peer.LogFields()).WithError(err).Error("TAP failed")
+				s.logger.WithFields(
+					fields,
+				).WithFields(
+					s.LogFields(),
+				).WithFields(
+					peer.LogFields(),
+				).WithError(err).Error("TAP failed")
 				peer = nil
 				break
 			}
@@ -169,7 +217,13 @@ func (s *Server) handleTCP(conn net.Conn) {
 			s.peersLock.Unlock()
 			s.peersByIDLock.Unlock()
 			s.kpLock.Unlock()
-			s.logger.WithFields(fields).WithFields(s.LogFields()).WithFields(peer.LogFields()).Info("Peer created")
+			s.logger.WithFields(
+				fields,
+			).WithFields(
+				s.LogFields(),
+			).WithFields(
+				peer.LogFields(),
+			).Info("Peer created")
 		}
 		break
 	}
@@ -193,7 +247,13 @@ func (s *Server) handleTCP(conn net.Conn) {
 		}
 		n, err = conn.Read(buf[prev:])
 		if err != nil {
-			s.logger.WithFields(fields).WithFields(s.LogFields()).WithError(err).Debug("Can't read connection: either EOFed or timeouted")
+			s.logger.WithFields(
+				fields,
+			).WithFields(
+				s.LogFields(),
+			).WithError(
+				err,
+			).Debug("Can't read connection: either EOFed or timeouted")
 			break
 		}
 		prev += n
@@ -206,7 +266,13 @@ func (s *Server) handleTCP(conn net.Conn) {
 			continue
 		}
 		if !peer.PktProcess(buf[:i+govpn.NonceSize], tap, false) {
-			s.logger.WithFields(fields).WithFields(s.LogFields()).WithFields(peer.LogFields()).Warn("Packet unauthenticated")
+			s.logger.WithFields(
+				fields,
+			).WithFields(
+				s.LogFields(),
+			).WithFields(
+				peer.LogFields(),
+			).Warn("Packet unauthenticated")
 			break
 		}
 		copy(buf, buf[i+govpn.NonceSize:prev])

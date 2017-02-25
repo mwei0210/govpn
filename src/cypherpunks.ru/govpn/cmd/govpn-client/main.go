@@ -80,7 +80,13 @@ func main() {
 	}
 
 	if protocol, err = govpn.NewProtocolFromString(*proto); err != nil {
-		logger.WithError(err).WithFields(fields).WithField("proto", *proto).Fatal("Invalid protocol")
+		logger.WithError(
+			err,
+		).WithFields(
+			fields,
+		).WithField(
+			"proto", *proto,
+		).Fatal("Invalid protocol")
 	}
 
 	if *proxyAddr != "" && protocol == govpn.ProtocolUDP {

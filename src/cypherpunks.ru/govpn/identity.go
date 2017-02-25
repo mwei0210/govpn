@@ -86,7 +86,12 @@ func (mc *MACCache) Update(peers *map[PeerID]*PeerConf) error {
 			delete(mc.cache, pid)
 		}
 	}
-	logger.WithFields(fields).WithField("size", mc.Length()).Debug("Cleaned, add/update new key")
+	logger.WithFields(
+		fields,
+	).WithField(
+		"size",
+		mc.Length(),
+	).Debug("Cleaned, add/update new key")
 	for pid, pc := range *peers {
 		if _, exists := mc.cache[pid]; exists {
 			logger.WithFields(fields).WithFields(
@@ -133,7 +138,12 @@ func AddTimeSync(ts int, data []byte) {
 	for i := 0; i < 8; i++ {
 		data[i] ^= buf[i]
 	}
-	logger.WithFields(fields).WithField("after", hex.EncodeToString(data)).Debug("Done")
+	logger.WithFields(
+		fields,
+	).WithField(
+		"after",
+		hex.EncodeToString(data),
+	).Debug("Done")
 }
 
 // Find tries to find peer's identity (that equals to MAC)
@@ -166,7 +176,12 @@ func (mc *MACCache) Find(data []byte) (*PeerID, error) {
 			mt.l.Unlock()
 			return nil, errors.Wrap(err, "mt.mac.Write")
 		}
-		logger.WithFields(fields).WithField("buf", hex.EncodeToString(buf[:0])).Debug("mt.mac.Sum")
+		logger.WithFields(
+			fields,
+		).WithField(
+			"buf",
+			hex.EncodeToString(buf[:0]),
+		).Debug("mt.mac.Sum")
 		mt.mac.Sum(sum[:0])
 		mt.l.Unlock()
 

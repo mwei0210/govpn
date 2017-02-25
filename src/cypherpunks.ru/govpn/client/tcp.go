@@ -103,7 +103,9 @@ HandshakeCycle:
 		}
 		n, err = conn.Read(buf[prev:])
 		if err != nil {
-			c.logger.WithFields(fields).WithFields(
+			c.logger.WithFields(
+				fields,
+			).WithFields(
 				c.LogFields(),
 			).Debug("Packet timeouted")
 			c.timeouted <- struct{}{}
@@ -113,7 +115,9 @@ HandshakeCycle:
 		prev += n
 		_, err = c.idsCache.Find(buf[:prev])
 		if err != nil {
-			c.logger.WithFields(fields).WithFields(
+			c.logger.WithFields(
+				fields,
+			).WithFields(
 				c.LogFields(),
 			).WithError(err).Debug("Can't find peer in ids")
 			continue
@@ -121,7 +125,11 @@ HandshakeCycle:
 		peer, err = hs.Client(buf[:prev])
 		prev = 0
 		if err != nil {
-			c.logger.WithFields(fields).WithError(err).WithFields(
+			c.logger.WithFields(
+				fields,
+			).WithError(
+				err,
+			).WithFields(
 				c.LogFields(),
 			).Debug("Can't create new peer")
 			continue
@@ -157,7 +165,9 @@ TransportCycle:
 		default:
 		}
 		if prev == len(buf) {
-			c.logger.WithFields(c.LogFields()).Debug("Packet timeouted")
+			c.logger.WithFields(
+				c.LogFields(),
+			).Debug("Packet timeouted")
 			c.timeouted <- struct{}{}
 			break TransportCycle
 		}
@@ -167,7 +177,11 @@ TransportCycle:
 		}
 		n, err = conn.Read(buf[prev:])
 		if err != nil {
-			c.logger.WithError(err).WithFields(c.LogFields()).Debug("Connection timeouted")
+			c.logger.WithError(
+				err,
+			).WithFields(
+				c.LogFields(),
+			).Debug("Connection timeouted")
 			c.timeouted <- struct{}{}
 			break TransportCycle
 		}

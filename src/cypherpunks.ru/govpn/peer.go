@@ -294,14 +294,17 @@ func newPeer(isClient bool, addr string, conn io.Writer, conf *PeerConf, key *[S
 func (p *Peer) EthProcess(data []byte) error {
 	const paddingSize = 1
 	if len(data) > p.MTU-paddingSize {
-		logger.WithFields(p.LogFields()).WithFields(
+		logger.WithFields(
+			p.LogFields(),
+		).WithFields(
 			p.ConfigurationLogFields(),
 		).WithFields(
 			logrus.Fields{
 				"func":        logFuncPrefix + "Peer.EthProcess",
 				"padding":     paddingSize,
 				"packet_size": len(data),
-			}).Warning("Ignore padded data packet larger than MTU")
+			},
+		).Warning("Ignore padded data packet larger than MTU")
 		return nil
 	}
 	p.BusyT.Lock()
@@ -362,8 +365,13 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 		"data":        len(data),
 	}
 	if len(data) < MinPktLength {
-		logger.WithFields(p.LogFields()).WithFields(fields).WithField(
-			"minimum_packet_Length", MinPktLength,
+		logger.WithFields(
+			p.LogFields(),
+		).WithFields(
+			fields,
+		).WithField(
+			"minimum_packet_Length",
+			MinPktLength,
 		).Debug("Ignore packet smaller than allowed minimum")
 		return false
 	}
@@ -377,7 +385,9 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 		var err error
 		out, err = EnclessDecode(p.key, p.nonceR, data[:len(data)-NonceSize])
 		if err != nil {
-			logger.WithFields(p.LogFields()).WithError(err).Debug("Failed to decode encless")
+			logger.WithFields(
+				p.LogFields(),
+			).WithError(err).Debug("Failed to decode encless")
 			p.FramesUnauth++
 			p.BusyR.Unlock()
 			return false
@@ -504,7 +514,9 @@ func PeerTapProcessor(peer *Peer, tap *TAP, terminator chan struct{}) {
 				}
 			case data = <-tap.Sink:
 				if err = peer.EthProcess(data); err != nil {
-					logger.WithFields(fields).WithFields(
+					logger.WithFields(
+						fields,
+					).WithFields(
 						peer.LogFields(),
 					).WithError(err).Warn("Can't process ethernet packet")
 				}
@@ -520,7 +532,9 @@ func PeerTapProcessor(peer *Peer, tap *TAP, terminator chan struct{}) {
 				break CPRProcessor
 			case data = <-tap.Sink:
 				if err = peer.EthProcess(data); err != nil {
-					logger.WithFields(fields).WithFields(
+					logger.WithFields(
+						fields,
+					).WithFields(
 						peer.LogFields(),
 					).WithError(err).Warn("Can't process ethernet packet")
 				}
@@ -528,7 +542,9 @@ func PeerTapProcessor(peer *Peer, tap *TAP, terminator chan struct{}) {
 			}
 			if data == nil {
 				if err = peer.EthProcess(nil); err != nil {
-					logger.WithFields(fields).WithFields(
+					logger.WithFields(
+						fields,
+					).WithFields(
 						peer.LogFields(),
 					).WithError(err).Warn("Can't process nil ethernet packet")
 				}
