@@ -65,8 +65,8 @@ func VerifierNew(s, t, p int, id *PeerID) *Verifier {
 // PasswordApply applies the password: create Ed25519 keypair based on it,
 // saves public key in verifier.
 func (v *Verifier) PasswordApply(password string) (*[ed25519.PrivateKeySize]byte, error) {
-	// TODO: there is an extremely weird bug, `balloon.H` panic if I the `hash.Hash`
-	// outside the `hasher` function.
+	// TODO: there is an extremely weird bug, "balloon.H" panic if I the `hash.Hash`
+	// outside the "hasher" function.
 	var err error
 	hasher := func() hash.Hash {
 		var nilHash hash.Hash
