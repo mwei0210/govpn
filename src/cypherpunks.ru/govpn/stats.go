@@ -46,10 +46,14 @@ func StatsProcessor(stats string, peers *KnownPeers) {
 		"port":    stats,
 	}
 
-	logger.WithFields(fields).WithField("port", stats).Debug("Stats are going to listen")
+	logger.WithFields(fields).WithField(
+		"port", stats,
+	).Debug("Stats are going to listen")
 	statsPort, err := net.Listen("tcp", stats)
 	if err != nil {
-		logger.WithError(err).WithField("stats", stats).Error("Can't listen stats server")
+		logger.WithError(err).WithField(
+			"stats", stats,
+		).Error("Can't listen stats server")
 		return
 	}
 
@@ -61,7 +65,9 @@ func StatsProcessor(stats string, peers *KnownPeers) {
 		}
 		deadLine := time.Now().Add(rwTimeout)
 		if err = conn.SetDeadline(deadLine); err != nil {
-			logger.WithFields(fields).WithField("deadline", deadLine.String()).WithError(err).Error("Couldn't set deadline")
+			logger.WithFields(fields).WithField(
+				"deadline", deadLine.String(),
+			).WithError(err).Error("Can't set deadline")
 		} else if _, err = conn.Read(buf); err != nil {
 			logger.WithFields(fields).WithError(err).Error("Couldn't read buffer")
 		} else if _, err = conn.Write([]byte("HTTP/1.0 200 OK\r\nContent-Type: application/json\r\n\r\n")); err != nil {
@@ -72,7 +78,9 @@ func StatsProcessor(stats string, peers *KnownPeers) {
 				peersList = append(peersList, *peer)
 			}
 			if err = json.NewEncoder(conn).Encode(peersList); err != nil {
-				logger.WithFields(fields).WithField("peers", len(peersList)).WithError(err).Error("Couldn't encode to JSON")
+				logger.WithFields(fields).WithField(
+					"peers", len(peersList),
+				).WithError(err).Error("Can't encode to JSON")
 			}
 		}
 		if err = conn.Close(); err != nil {

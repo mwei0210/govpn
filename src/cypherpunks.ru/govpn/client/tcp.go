@@ -39,7 +39,10 @@ func (c *Client) startTCP() {
 	if c.config.FileDescriptor > 0 {
 		l.WithField("fd", c.config.FileDescriptor).Debug("Connect using file descriptor")
 		var err error
-		conn, err = net.FileConn(os.NewFile(uintptr(c.config.FileDescriptor), fmt.Sprintf("fd[%s]", c.config.RemoteAddress)))
+		conn, err = net.FileConn(os.NewFile(
+			uintptr(c.config.FileDescriptor),
+			fmt.Sprintf("fd[%s]", c.config.RemoteAddress),
+		))
 		if err != nil {
 			c.Error <- errors.Wrapf(err, "net.FileConn fd:%d", c.config.FileDescriptor)
 			return
@@ -86,7 +89,9 @@ HandshakeCycle:
 		default:
 		}
 		if prev == len(buf) {
-			c.logger.WithFields(fields).WithFields(c.LogFields()).Debug("Packet timeouted")
+			c.logger.WithFields(fields).WithFields(
+				c.LogFields(),
+			).Debug("Packet timeouted")
 			c.timeouted <- struct{}{}
 			break HandshakeCycle
 		}
@@ -98,7 +103,9 @@ HandshakeCycle:
 		}
 		n, err = conn.Read(buf[prev:])
 		if err != nil {
-			c.logger.WithFields(fields).WithFields(c.LogFields()).Debug("Packet timeouted")
+			c.logger.WithFields(fields).WithFields(
+				c.LogFields(),
+			).Debug("Packet timeouted")
 			c.timeouted <- struct{}{}
 			break HandshakeCycle
 		}
@@ -106,13 +113,17 @@ HandshakeCycle:
 		prev += n
 		_, err = c.idsCache.Find(buf[:prev])
 		if err != nil {
-			c.logger.WithFields(fields).WithFields(c.LogFields()).WithError(err).Debug("Couldn't find peer in ids")
+			c.logger.WithFields(fields).WithFields(
+				c.LogFields(),
+			).WithError(err).Debug("Can't find peer in ids")
 			continue
 		}
 		peer, err = hs.Client(buf[:prev])
 		prev = 0
 		if err != nil {
-			c.logger.WithFields(fields).WithError(err).WithFields(c.LogFields()).Debug("Can't create new peer")
+			c.logger.WithFields(fields).WithError(err).WithFields(
+				c.LogFields(),
+			).Debug("Can't create new peer")
 			continue
 		}
 		c.logger.WithFields(fields).WithFields(c.LogFields()).Info("Handshake completed")

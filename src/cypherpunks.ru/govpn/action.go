@@ -49,7 +49,13 @@ func RunScriptAction(path *string) TunnelAction {
 	}
 	return func(ctx PeerContext) error {
 		_, err := ScriptCall(*path, ctx.Config.Iface, ctx.RemoteAddress)
-		return errors.Wrapf(err, "ScriptCall path=%q interface=%q remote=%q", *path, ctx.Config.Iface, ctx.RemoteAddress)
+		return errors.Wrapf(
+			err,
+			"ScriptCall path=%q interface=%q remote=%q",
+			*path,
+			ctx.Config.Iface,
+			ctx.RemoteAddress,
+		)
 	}
 }
 

@@ -89,7 +89,11 @@ func (p Protocol) MarshalJSON() ([]byte, error) {
 func (p *Protocol) UnmarshalJSON(encoded []byte) error {
 	var str string
 	if err := json.Unmarshal(encoded, &str); err != nil {
-		return errors.Wrapf(err, "Can't unmarshall to string %q", hex.EncodeToString(encoded))
+		return errors.Wrapf(
+			err,
+			"Can't unmarshall to string %q",
+			hex.EncodeToString(encoded),
+		)
 	}
 	proto, err := NewProtocolFromString(str)
 	if err != nil {

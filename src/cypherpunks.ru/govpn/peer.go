@@ -295,7 +295,9 @@ func (p *Peer) EthProcess(data []byte) error {
 	const paddingSize = 1
 	lenData := len(data)
 	if lenData > p.MTU-paddingSize {
-		logger.WithFields(p.LogFields()).WithFields(p.ConfigurationLogFields()).WithFields(
+		logger.WithFields(p.LogFields()).WithFields(
+			p.ConfigurationLogFields(),
+		).WithFields(
 			logrus.Fields{
 				"func":        logFuncPrefix + "Peer.EthProcess",
 				"padding":     paddingSize,
@@ -362,7 +364,9 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 		"data":        lenData,
 	}
 	if lenData < MinPktLength {
-		logger.WithFields(p.LogFields()).WithFields(fields).WithField("minimum_packet_Length", MinPktLength).Debug("Ignore packet smaller than allowed minimum")
+		logger.WithFields(p.LogFields()).WithFields(fields).WithField(
+			"minimum_packet_Length", MinPktLength,
+		).Debug("Ignore packet smaller than allowed minimum")
 		return false
 	}
 	if !p.Encless && lenData > len(p.bufR)-chacha20InternalBlockSize {
@@ -490,13 +494,21 @@ func PeerTapProcessor(peer *Peer, tap *TAP, terminator chan struct{}) {
 				now = time.Now()
 				if lastSent.Add(peer.Timeout).Before(now) {
 					if err = peer.EthProcess(nil); err != nil {
-						logger.WithFields(fields).WithFields(peer.LogFields()).WithError(err).Warn("Can't process nil ethernet packet")
+						logger.WithFields(
+							fields,
+						).WithFields(
+							peer.LogFields(),
+						).WithError(err).Warn(
+							"Can't process nil ethernet packet",
+						)
 					}
 					lastSent = now
 				}
 			case data = <-tap.Sink:
 				if err = peer.EthProcess(data); err != nil {
-					logger.WithFields(fields).WithFields(peer.LogFields()).WithError(err).Warn("Can't process ethernet packet")
+					logger.WithFields(fields).WithFields(
+						peer.LogFields(),
+					).WithError(err).Warn("Can't process ethernet packet")
 				}
 				lastSent = time.Now()
 			}
@@ -510,13 +522,17 @@ func PeerTapProcessor(peer *Peer, tap *TAP, terminator chan struct{}) {
 				break CPRProcessor
 			case data = <-tap.Sink:
 				if err = peer.EthProcess(data); err != nil {
-					logger.WithFields(fields).WithFields(peer.LogFields()).WithError(err).Warn("Can't process ethernet packet")
+					logger.WithFields(fields).WithFields(
+						peer.LogFields(),
+					).WithError(err).Warn("Can't process ethernet packet")
 				}
 			default:
 			}
 			if data == nil {
 				if err = peer.EthProcess(nil); err != nil {
-					logger.WithFields(fields).WithFields(peer.LogFields()).WithError(err).Warn("Can't process nil ethernet packet")
+					logger.WithFields(fields).WithFields(
+						peer.LogFields(),
+					).WithError(err).Warn("Can't process nil ethernet packet")
 				}
 			}
 			time.Sleep(peer.CPRCycle)
