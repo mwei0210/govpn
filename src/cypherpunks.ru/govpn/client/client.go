@@ -40,8 +40,8 @@ type Configuration struct {
 	ProxyAuthentication string
 	RemoteAddress       string
 	NoReconnect         bool
-	// FileDescriptor allow to create a Client from a pre-existing file descriptor.
-	// Required for Android. requires TCP protocol
+	// FileDescriptor allows creating Client from a pre-existing file
+	// descriptor. Required for Android. Requires TCP transport.
 	FileDescriptor int
 }
 
@@ -54,18 +54,21 @@ func (c *Configuration) Validate() error {
 		return errors.New("Missing RemoteAddress")
 	}
 	if len(c.Peer.Iface) == 0 && c.Peer.PreUp == nil {
-		return errors.New("Missing InterfaceName *or* PreUp")
+		return errors.New("Missing InterfaceName or PreUp")
 	}
 	if c.Protocol != govpn.ProtocolTCP && c.Protocol != govpn.ProtocolUDP {
 		return errors.Errorf("Invalid protocol %d for client", c.Protocol)
 	}
 	if c.FileDescriptor > 0 && c.Protocol != govpn.ProtocolTCP {
-		return errors.Errorf("Connect with file descriptor requires protocol %s", govpn.ProtocolTCP.String())
+		return errors.Errorf(
+			"Connect with file descriptor requires protocol %s",
+			govpn.ProtocolTCP.String(),
+		)
 	}
 	return nil
 }
 
-// LogFields return a logrus compatible logging context
+// LogFields returns a logrus compatible logging context
 func (c *Configuration) LogFields() logrus.Fields {
 	const prefix = "client_conf_"
 	f := c.Peer.LogFields(prefix)
@@ -103,7 +106,7 @@ type Client struct {
 	Error chan error
 }
 
-// LogFields return a logrus compatible logging context
+// LogFields returns a logrus compatible logging context
 func (c *Client) LogFields() logrus.Fields {
 	const prefix = "client_"
 	f := logrus.Fields{
@@ -142,8 +145,7 @@ func (c *Client) postUpAction() error {
 	return errors.Wrap(err, "c.config.Peer.Up")
 }
 
-// KnownPeers return GoVPN peers. Always 1.
-// used to get client statistics.
+// KnownPeers returns GoVPN peers. Always 1. Used to get client statistics.
 func (c *Client) KnownPeers() *govpn.KnownPeers {
 	return &c.knownPeers
 }
@@ -170,12 +172,16 @@ func (c *Client) MainCycle() {
 		l.Debug("No PreUp to run")
 	}
 
-	// if tap wasn't set by PreUp, listen here
+	// if TAP wasn't set by PreUp, listen here
 	if c.tap == nil {
 		l.WithField("asking", c.config.Peer.Iface).Debug("No interface, try to listen")
 		c.tap, err = govpn.TAPListen(c.config.Peer.Iface, c.config.Peer.MTU)
 		if err != nil {
-			c.Error <- errors.Wrapf(err, "govpn.TAPListen inteface:%s mtu:%d", c.config.Peer.Iface, c.config.Peer.MTU)
+			c.Error <- errors.Wrapf(
+				err,
+				"govpn.TAPListen inteface:%s mtu:%d",
+				c.config.Peer.Iface, c.config.Peer.MTU,
+			)
 			return
 		}
 	}

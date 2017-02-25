@@ -1,6 +1,7 @@
 /*
 GoVPN -- simple secure free software virtual private network daemon
-Copyright (C) 2014-2016 Sergey Matveev <stargrave@stargrave.org>
+Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
+              2016-2017 Bruno Clermont <bruno@robotinfra.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -25,7 +26,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// PeerContext hold info about a peer that connect or disconnect
+// PeerContext holds info about a peer that connect or disconnect
 // used for Up, PreUp and Down
 type PeerContext struct {
 	RemoteAddress string
@@ -41,7 +42,7 @@ type TunnelAction func(PeerContext) error
 // after user is authenticated
 type TunnelPreUpAction func(PeerContext) (*TAP, error)
 
-// RunScriptAction convert the path to a script into a TunnelAction
+// RunScriptAction converts the path to a script into a TunnelAction
 func RunScriptAction(path *string) TunnelAction {
 	if path == nil {
 		return nil
@@ -52,7 +53,7 @@ func RunScriptAction(path *string) TunnelAction {
 	}
 }
 
-// ScriptCall call external program/script.
+// ScriptCall calls external program/script.
 // You have to specify path to it and (inteface name as a rule) something
 // that will be the first argument when calling it. Function will return
 // it's output and possible error.

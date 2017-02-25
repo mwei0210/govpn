@@ -63,9 +63,16 @@ func (c *Client) proxyTCP() {
 	}
 	if resp.StatusCode != http.StatusOK {
 		govpn.CloseLog(conn, c.logger, c.LogFields())
-		c.Error <- errors.Errorf("Unexpected response from proxy: %s", http.StatusText(resp.StatusCode))
+		c.Error <- errors.Errorf(
+			"Unexpected response from proxy: %s",
+			http.StatusText(resp.StatusCode),
+		)
 		return
 	}
-	c.logger.WithField("func", logFuncPrefix+"Client.proxyTCP").WithFields(c.config.LogFields()).Debug("Proxy connected")
+	c.logger.WithField(
+		"func", logFuncPrefix+"Client.proxyTCP",
+	).WithFields(
+		c.config.LogFields(),
+	).Debug("Proxy connected")
 	go c.handleTCP(conn)
 }
