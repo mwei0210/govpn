@@ -293,15 +293,14 @@ func newPeer(isClient bool, addr string, conn io.Writer, conf *PeerConf, key *[S
 // packets will be sent to remote Peer side immediately.
 func (p *Peer) EthProcess(data []byte) error {
 	const paddingSize = 1
-	lenData := len(data)
-	if lenData > p.MTU-paddingSize {
+	if len(data) > p.MTU-paddingSize {
 		logger.WithFields(p.LogFields()).WithFields(
 			p.ConfigurationLogFields(),
 		).WithFields(
 			logrus.Fields{
 				"func":        logFuncPrefix + "Peer.EthProcess",
 				"padding":     paddingSize,
-				"packet_size": lenData,
+				"packet_size": len(data),
 			}).Warning("Ignore padded data packet larger than MTU")
 		return nil
 	}
@@ -310,15 +309,15 @@ func (p *Peer) EthProcess(data []byte) error {
 
 	// Zero size is a heartbeat packet
 	SliceZero(p.bufT)
-	if lenData == 0 {
+	if len(data) == 0 {
 		p.bufT[CC20IBS+0] = padByte
 		p.HeartbeatSent++
 	} else {
 		// Copy payload to our internal buffer and we are ready to
 		// accept the next one
 		copy(p.bufT[CC20IBS:], data)
-		p.bufT[CC20IBS+lenData] = padByte
-		p.BytesPayloadOut += uint64(lenData)
+		p.bufT[CC20IBS+len(data)] = padByte
+		p.BytesPayloadOut += uint64(len(data))
 	}
 
 	if p.NoiseEnable && !p.Encless {
@@ -326,7 +325,7 @@ func (p *Peer) EthProcess(data []byte) error {
 	} else if p.Encless {
 		p.frameT = p.bufT[CC20IBS : CC20IBS+p.MTU]
 	} else {
-		p.frameT = p.bufT[CC20IBS : CC20IBS+lenData+1+NonceSize]
+		p.frameT = p.bufT[CC20IBS : CC20IBS+len(data)+1+NonceSize]
 	}
 	copy(p.frameT[len(p.frameT)-NonceSize:], (<-p.noncesT)[:])
 	var out []byte
@@ -357,27 +356,26 @@ func (p *Peer) EthProcess(data []byte) error {
 
 // PktProcess processes data of a single packet
 func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
-	lenData := len(data)
 	fields := logrus.Fields{
 		"func":        logFuncPrefix + "Peer.PktProcess",
 		"reorderable": reorderable,
-		"data":        lenData,
+		"data":        len(data),
 	}
-	if lenData < MinPktLength {
+	if len(data) < MinPktLength {
 		logger.WithFields(p.LogFields()).WithFields(fields).WithField(
 			"minimum_packet_Length", MinPktLength,
 		).Debug("Ignore packet smaller than allowed minimum")
 		return false
 	}
-	if !p.Encless && lenData > len(p.bufR)-CC20IBS {
+	if !p.Encless && len(data) > len(p.bufR)-CC20IBS {
 		return false
 	}
 	var out []byte
 	p.BusyR.Lock() // TODO use defer to unlock?
-	copy(p.nonceR[8:], data[lenData-NonceSize:])
+	copy(p.nonceR[8:], data[len(data)-NonceSize:])
 	if p.Encless {
 		var err error
-		out, err = EnclessDecode(p.key, p.nonceR, data[:lenData-NonceSize])
+		out, err = EnclessDecode(p.key, p.nonceR, data[:len(data)-NonceSize])
 		if err != nil {
 			logger.WithFields(p.LogFields()).WithError(err).Debug("Failed to decode encless")
 			p.FramesUnauth++
@@ -390,8 +388,8 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 		}
 		copy(p.bufR[CC20IBS:], data[tagSize:])
 		chacha20.XORKeyStream(
-			p.bufR[:CC20IBS+lenData-tagSize-NonceSize],
-			p.bufR[:CC20IBS+lenData-tagSize-NonceSize],
+			p.bufR[:CC20IBS+len(data)-tagSize-NonceSize],
+			p.bufR[:CC20IBS+len(data)-tagSize-NonceSize],
 			p.nonceR,
 			p.key,
 		)
@@ -402,11 +400,11 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 			p.BusyR.Unlock()
 			return false
 		}
-		out = p.bufR[CC20IBS : CC20IBS+lenData-tagSize-NonceSize]
+		out = p.bufR[CC20IBS : CC20IBS+len(data)-tagSize-NonceSize]
 	}
 
 	if reorderable {
-		copy(p.nonceRecv[:], data[lenData-NonceSize:])
+		copy(p.nonceRecv[:], data[len(data)-NonceSize:])
 		_, foundL := p.nonceBucketL[p.nonceRecv]
 		_, foundM := p.nonceBucketM[p.nonceRecv]
 		_, foundH := p.nonceBucketH[p.nonceRecv]
@@ -438,7 +436,7 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 			}
 		}
 	} else {
-		if subtle.ConstantTimeCompare(data[lenData-NonceSize:], p.NonceExpect) != 1 {
+		if subtle.ConstantTimeCompare(data[len(data)-NonceSize:], p.NonceExpect) != 1 {
 			p.FramesDup++
 			p.BusyR.Unlock()
 			return false
@@ -447,7 +445,7 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 	}
 
 	p.FramesIn++
-	atomic.AddUint64(&p.BytesIn, uint64(lenData))
+	atomic.AddUint64(&p.BytesIn, uint64(len(data)))
 	p.LastPing = time.Now()
 	p.pktSizeR = bytes.LastIndexByte(out, padByte)
 	if p.pktSizeR == -1 {

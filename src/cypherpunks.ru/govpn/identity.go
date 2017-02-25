@@ -141,15 +141,14 @@ func AddTimeSync(ts int, data []byte) {
 // as plaintext and last bytes as cyphertext.
 func (mc *MACCache) Find(data []byte) (*PeerID, error) {
 	const minimumSize = 8 * 2
-	lenData := len(data)
 	fields := logrus.Fields{
 		"func": logFuncPrefix + "MACCache.Find",
-		"data": lenData,
+		"data": len(data),
 		"size": mc.Length(),
 	}
 	logger.WithFields(fields).Debug("Starting")
-	if lenData < minimumSize {
-		return nil, errors.Errorf("MAC is too small %d, minimum %d", lenData, minimumSize)
+	if len(data) < minimumSize {
+		return nil, errors.Errorf("MAC is too small %d, minimum %d", len(data), minimumSize)
 	}
 	buf := make([]byte, 8)
 	sum := make([]byte, 32)
@@ -171,7 +170,7 @@ func (mc *MACCache) Find(data []byte) (*PeerID, error) {
 		mt.mac.Sum(sum[:0])
 		mt.l.Unlock()
 
-		if subtle.ConstantTimeCompare(sum[len(sum)-8:], data[lenData-8:]) == 1 {
+		if subtle.ConstantTimeCompare(sum[len(sum)-8:], data[len(data)-8:]) == 1 {
 			logger.WithFields(fields).WithFields(loopFields).Debug("Matching peer")
 			ppid := PeerID(pid)
 			return &ppid, nil
