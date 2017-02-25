@@ -36,10 +36,10 @@ import (
 
 const (
 	// NonceSize is nonce size
-	NonceSize                 = 8
-	nonceBucketSize           = 256
-	tagSize                   = poly1305.TagSize
-	chacha20InternalBlockSize = 64
+	NonceSize       = 8
+	nonceBucketSize = 256
+	tagSize         = poly1305.TagSize
+	CC20IBS         = 64
 	// MaxBytesPerKey is maximal amount of bytes transferred with single key (4 GiB)
 	MaxBytesPerKey uint64 = 1 << 32
 	// Heartbeat rate, relative to Timeout
@@ -207,7 +207,7 @@ func newPeer(isClient bool, addr string, conn io.Writer, conf *PeerConf, key *[S
 		timeout = timeout / timeoutHeartbeat
 	}
 
-	bufSize := chacha20InternalBlockSize + 2*conf.MTU
+	bufSize := CC20IBS + 2*conf.MTU
 	if conf.Encless {
 		bufSize += EnclessEnlargeSize
 		noiseEnable = true
@@ -311,22 +311,22 @@ func (p *Peer) EthProcess(data []byte) error {
 	// Zero size is a heartbeat packet
 	SliceZero(p.bufT)
 	if lenData == 0 {
-		p.bufT[chacha20InternalBlockSize+0] = padByte
+		p.bufT[CC20IBS+0] = padByte
 		p.HeartbeatSent++
 	} else {
 		// Copy payload to our internal buffer and we are ready to
 		// accept the next one
-		copy(p.bufT[chacha20InternalBlockSize:], data)
-		p.bufT[chacha20InternalBlockSize+lenData] = padByte
+		copy(p.bufT[CC20IBS:], data)
+		p.bufT[CC20IBS+lenData] = padByte
 		p.BytesPayloadOut += uint64(lenData)
 	}
 
 	if p.NoiseEnable && !p.Encless {
-		p.frameT = p.bufT[chacha20InternalBlockSize : chacha20InternalBlockSize+p.MTU-tagSize]
+		p.frameT = p.bufT[CC20IBS : CC20IBS+p.MTU-tagSize]
 	} else if p.Encless {
-		p.frameT = p.bufT[chacha20InternalBlockSize : chacha20InternalBlockSize+p.MTU]
+		p.frameT = p.bufT[CC20IBS : CC20IBS+p.MTU]
 	} else {
-		p.frameT = p.bufT[chacha20InternalBlockSize : chacha20InternalBlockSize+lenData+1+NonceSize]
+		p.frameT = p.bufT[CC20IBS : CC20IBS+lenData+1+NonceSize]
 	}
 	copy(p.frameT[len(p.frameT)-NonceSize:], (<-p.noncesT)[:])
 	var out []byte
@@ -340,8 +340,8 @@ func (p *Peer) EthProcess(data []byte) error {
 		out = append(out, p.frameT[len(p.frameT)-NonceSize:]...)
 	} else {
 		chacha20.XORKeyStream(
-			p.bufT[:chacha20InternalBlockSize+len(p.frameT)-NonceSize],
-			p.bufT[:chacha20InternalBlockSize+len(p.frameT)-NonceSize],
+			p.bufT[:CC20IBS+len(p.frameT)-NonceSize],
+			p.bufT[:CC20IBS+len(p.frameT)-NonceSize],
 			p.nonceT,
 			p.key,
 		)
@@ -369,7 +369,7 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 		).Debug("Ignore packet smaller than allowed minimum")
 		return false
 	}
-	if !p.Encless && lenData > len(p.bufR)-chacha20InternalBlockSize {
+	if !p.Encless && lenData > len(p.bufR)-CC20IBS {
 		return false
 	}
 	var out []byte
@@ -388,10 +388,10 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 		for i := 0; i < SSize; i++ {
 			p.bufR[i] = 0
 		}
-		copy(p.bufR[chacha20InternalBlockSize:], data[tagSize:])
+		copy(p.bufR[CC20IBS:], data[tagSize:])
 		chacha20.XORKeyStream(
-			p.bufR[:chacha20InternalBlockSize+lenData-tagSize-NonceSize],
-			p.bufR[:chacha20InternalBlockSize+lenData-tagSize-NonceSize],
+			p.bufR[:CC20IBS+lenData-tagSize-NonceSize],
+			p.bufR[:CC20IBS+lenData-tagSize-NonceSize],
 			p.nonceR,
 			p.key,
 		)
@@ -402,7 +402,7 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 			p.BusyR.Unlock()
 			return false
 		}
-		out = p.bufR[chacha20InternalBlockSize : chacha20InternalBlockSize+lenData-tagSize-NonceSize]
+		out = p.bufR[CC20IBS : CC20IBS+lenData-tagSize-NonceSize]
 	}
 
 	if reorderable {
