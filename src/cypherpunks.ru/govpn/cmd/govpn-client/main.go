@@ -53,7 +53,7 @@ func main() {
 		syslog      = flag.Bool("syslog", false, "Enable logging to syslog")
 		version     = flag.Bool("version", false, "Print version information")
 		warranty    = flag.Bool("warranty", false, "Print warranty information")
-		logLevel    = flag.String("log_level", "warning", "Log level")
+		logLevel    = flag.String("loglevel", "warning", "Logging level")
 		protocol    govpn.Protocol
 		err         error
 		fields      = logrus.Fields{"func": "main"}
