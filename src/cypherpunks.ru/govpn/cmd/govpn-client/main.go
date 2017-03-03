@@ -71,7 +71,7 @@ func main() {
 
 	logger, err := govpn.NewLogger(*logLevel, *syslog)
 	if err != nil {
-		logrus.WithFields(fields).WithError(err).Fatal("Can't initialize logging")
+		logrus.WithFields(fields).WithError(err).Fatal("Can not initialize logging")
 	}
 
 	if *egdPath != "" {
@@ -109,7 +109,7 @@ func main() {
 	}
 	priv, err := verifier.PasswordApply(key)
 	if err != nil {
-		logger.WithError(err).Fatal("Can't PasswordApply")
+		logger.WithError(err).Fatal("Can not PasswordApply")
 	}
 	if *encless {
 		if protocol != govpn.ProtocolTCP {
@@ -145,7 +145,7 @@ func main() {
 
 	c, err := client.NewClient(conf, logger, govpn.CatchSignalShutdown())
 	if err != nil {
-		logger.WithError(err).Fatal("Can't initialize client")
+		logger.WithError(err).Fatal("Can not initialize client")
 	}
 
 	if *stats != "" {

@@ -163,7 +163,7 @@ func (s *Server) MainCycle() {
 		s.LogFields(),
 	).WithFields(
 		s.configuration.LogFields(),
-	).Info("Starting...")
+	).Info("Starting")
 
 	var needsDeletion bool
 	var err error
@@ -194,7 +194,7 @@ MainCycle:
 						fields,
 					).WithFields(
 						ps.peer.LogFields(),
-					).Error("Couldn't close TAP")
+					).Error("Can not close TAP")
 				}
 			}
 			// empty value signals that everything is fine
@@ -210,7 +210,7 @@ MainCycle:
 						fields,
 					).WithFields(
 						hs.LogFields(),
-					).Debug("handshake is expired, delete")
+					).Debug("Handshake is expired, deleting")
 					hs.Zero()
 					delete(s.handshakes, addr)
 				}
@@ -238,14 +238,14 @@ MainCycle:
 							fields,
 						).WithFields(
 							ps.peer.LogFields(),
-						).Error("Couldn't execute callDown")
+						).Error("Can not execute callDown")
 					}
 					if err = ps.tap.Close(); err != nil {
 						logrus.WithError(err).WithFields(
 							fields,
 						).WithFields(
 							ps.peer.LogFields(),
-						).Error("Couldn't close TAP")
+						).Error("Can not close TAP")
 					}
 					ps.terminator <- struct{}{}
 				}

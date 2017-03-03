@@ -55,14 +55,14 @@ func StatsProcessor(stats string, peers *KnownPeers) {
 	if err != nil {
 		logger.WithError(err).WithField(
 			"stats", stats,
-		).Error("Can't listen stats server")
+		).Error("Can not listen stats server")
 		return
 	}
 
 	for {
 		conn, err = statsPort.Accept()
 		if err != nil {
-			logger.WithFields(fields).WithError(err).Error("Can't accept connection")
+			logger.WithFields(fields).WithError(err).Error("Can not accept connection")
 			continue
 		}
 		deadLine := time.Now().Add(rwTimeout)
@@ -72,11 +72,11 @@ func StatsProcessor(stats string, peers *KnownPeers) {
 			).WithField(
 				"deadline",
 				deadLine.String(),
-			).WithError(err).Error("Can't set deadline")
+			).WithError(err).Error("Can not set deadline")
 		} else if _, err = conn.Read(buf); err != nil {
-			logger.WithFields(fields).WithError(err).Error("Can't read buffer")
+			logger.WithFields(fields).WithError(err).Error("Can not read buffer")
 		} else if _, err = conn.Write([]byte("HTTP/1.0 200 OK\r\nContent-Type: application/json\r\n\r\n")); err != nil {
-			logger.WithFields(fields).WithError(err).Error("Can't write HTTP headers")
+			logger.WithFields(fields).WithError(err).Error("Can not write HTTP headers")
 		} else {
 			var peersList []*Peer
 			for _, peer := range *peers {
@@ -87,11 +87,11 @@ func StatsProcessor(stats string, peers *KnownPeers) {
 					fields,
 				).WithField(
 					"peers", len(peersList),
-				).WithError(err).Error("Can't encode to JSON")
+				).WithError(err).Error("Can not encode to JSON")
 			}
 		}
 		if err = conn.Close(); err != nil {
-			logger.WithFields(fields).WithError(err).Error("Can't close connection")
+			logger.WithFields(fields).WithError(err).Error("Can not close connection")
 		}
 	}
 }

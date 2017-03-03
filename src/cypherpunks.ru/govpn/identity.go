@@ -79,7 +79,7 @@ func (mc *MACCache) Update(peers *map[PeerID]*PeerConf) error {
 		"func":  logFuncPrefix + "MACCache.Update",
 		"peers": len(*peers),
 	}
-	logger.WithFields(fields).WithField("size", mc.Length()).Debug("Clean old keys")
+	logger.WithFields(fields).WithField("size", mc.Length()).Debug("Cleaning old keys")
 	for pid := range mc.cache {
 		if _, exists := (*peers)[pid]; !exists {
 			logger.WithFields(fields).WithField("pid", pid).Debug("Cleaning key")
@@ -91,7 +91,7 @@ func (mc *MACCache) Update(peers *map[PeerID]*PeerConf) error {
 	).WithField(
 		"size",
 		mc.Length(),
-	).Debug("Cleaned, add/update new key")
+	).Debug("Cleaned, adding/updating new keys")
 	for pid, pc := range *peers {
 		if _, exists := mc.cache[pid]; exists {
 			logger.WithFields(fields).WithFields(
@@ -118,7 +118,7 @@ func (mc *MACCache) Update(peers *map[PeerID]*PeerConf) error {
 			}
 		}
 	}
-	logger.WithFields(fields).WithField("size", mc.Length()).Debug("Finish")
+	logger.WithFields(fields).WithField("size", mc.Length()).Debug("Finished")
 	return nil
 }
 
@@ -158,7 +158,7 @@ func (mc *MACCache) Find(data []byte) (*PeerID, error) {
 	}
 	logger.WithFields(fields).Debug("Starting")
 	if len(data) < minimumSize {
-		return nil, errors.Errorf("MAC is too small %d, minimum %d", len(data), minimumSize)
+		return nil, errors.Errorf("MAC is too short %d, minimum %d", len(data), minimumSize)
 	}
 	buf := make([]byte, 8)
 	sum := make([]byte, 32)
@@ -166,12 +166,16 @@ func (mc *MACCache) Find(data []byte) (*PeerID, error) {
 	defer mc.l.RUnlock()
 	for pid, mt := range mc.cache {
 		loopFields := logrus.Fields{"pid": pid.String()}
-		logger.WithFields(loopFields).Debug("process")
+		logger.WithFields(loopFields).Debug("Processing")
 		copy(buf, data)
 		AddTimeSync(mt.ts, buf)
 		mt.l.Lock()
 		mt.mac.Reset()
-		logger.WithFields(fields).WithField("buf", hex.EncodeToString(buf)).Debug("mt.mac.Write")
+		logger.WithFields(
+			fields,
+		).WithField(
+			"buf", hex.EncodeToString(buf),
+		).Debug("mt.mac.Write")
 		if _, err := mt.mac.Write(buf); err != nil {
 			mt.l.Unlock()
 			return nil, errors.Wrap(err, "mt.mac.Write")
@@ -191,8 +195,8 @@ func (mc *MACCache) Find(data []byte) (*PeerID, error) {
 			return &ppid, nil
 		}
 
-		logger.WithFields(fields).WithFields(loopFields).Debug("Not matching peer")
+		logger.WithFields(fields).WithFields(loopFields).Debug("Peer is not matched")
 	}
-	logger.WithFields(fields).Debug("Can't find matching peer ID")
+	logger.WithFields(fields).Debug("Can not find matching peer ID")
 	return nil, nil
 }

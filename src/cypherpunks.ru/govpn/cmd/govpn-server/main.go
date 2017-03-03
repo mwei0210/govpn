@@ -60,7 +60,7 @@ func main() {
 	if err != nil {
 		logrus.WithFields(
 			fields,
-		).WithError(err).Fatal("Couldn't initialize logging")
+		).WithError(err).Fatal("Can not initialize logging")
 	}
 	govpn.SetLogger(logger)
 

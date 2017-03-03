@@ -164,7 +164,7 @@ func (c *Client) MainCycle() {
 		c.LogFields(),
 	).WithFields(
 		c.config.LogFields(),
-	).Info("Starting...")
+	).Info("Starting")
 
 	// if available, run PreUp, it might create interface
 	if c.config.Peer.PreUp != nil {
@@ -184,7 +184,7 @@ func (c *Client) MainCycle() {
 
 	// if TAP wasn't set by PreUp, listen here
 	if c.tap == nil {
-		l.WithField("asking", c.config.Peer.Iface).Debug("No interface, try to listen")
+		l.WithField("asking", c.config.Peer.Iface).Debug("No interface, trying to listen")
 		c.tap, err = govpn.TAPListen(c.config.Peer.Iface, c.config.Peer.MTU)
 		if err != nil {
 			c.Error <- errors.Wrapf(
@@ -196,7 +196,7 @@ func (c *Client) MainCycle() {
 		}
 	}
 	c.config.Peer.Iface = c.tap.Name
-	l.WithFields(c.LogFields()).Debug("Got interface, start main loop")
+	l.WithFields(c.LogFields()).Debug("Got interface, starting main loop")
 
 MainCycle:
 	for {
@@ -205,10 +205,10 @@ MainCycle:
 		c.termination = make(chan struct{})
 		switch c.config.Protocol {
 		case govpn.ProtocolUDP:
-			l.Debug("Start UDP")
+			l.Debug("Starting UDP")
 			go c.startUDP()
 		case govpn.ProtocolTCP:
-			l.Debug("Start TCP")
+			l.Debug("Starting TCP")
 			if c.config.isProxy() {
 				go c.proxyTCP()
 			} else {
@@ -236,7 +236,7 @@ MainCycle:
 		close(c.rehandshaking)
 		close(c.termination)
 	}
-	l.WithFields(c.config.LogFields()).Debug("Run post down action")
+	l.WithFields(c.config.LogFields()).Debug("Running post down action")
 	if err = c.postDownAction(); err != nil {
 		c.Error <- errors.Wrap(err, "c.postDownAction")
 	}

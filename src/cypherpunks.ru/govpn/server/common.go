@@ -27,8 +27,8 @@ import (
 const logFuncPrefix = "govpn/server."
 
 var (
-	errMisconfiguredTap = errors.New("No PreUp and no Iface, can't create interface")
-	errPreUpNoTap       = errors.New("PreUp didn't returned an interface, and Iface is unset")
+	errMisconfiguredTap = errors.New("No PreUp and no Iface, can not create interface")
+	errPreUpNoTap       = errors.New("PreUp didn't return interface, and Iface is unset")
 )
 
 func (s *Server) callUp(peer *govpn.Peer, proto govpn.Protocol) (*govpn.TAP, error) {
@@ -51,7 +51,7 @@ func (s *Server) callUp(peer *govpn.Peer, proto govpn.Protocol) (*govpn.TAP, err
 	}
 
 	if conf.PreUp != nil {
-		s.logger.WithFields(fields).Debug("PreUp defined, execute it")
+		s.logger.WithFields(fields).Debug("PreUp defined, executing it")
 		tap, err = conf.PreUp(govpn.PeerContext{
 			RemoteAddress: peer.Addr,
 			Protocol:      proto,
@@ -62,11 +62,11 @@ func (s *Server) callUp(peer *govpn.Peer, proto govpn.Protocol) (*govpn.TAP, err
 		}
 		s.logger.WithFields(fields).WithField("tap", tap).Debug("PreUp finished")
 	} else {
-		s.logger.WithFields(fields).Debug("No PreUp defined, skip")
+		s.logger.WithFields(fields).Debug("No PreUp defined, skipping")
 	}
 
 	if tap == nil {
-		s.logger.WithFields(fields).Debug("PreUp didn't returned an interface, create one")
+		s.logger.WithFields(fields).Debug("PreUp did not return interface, creating one")
 		if !isConfigIface {
 			return nil, errors.Wrapf(errPreUpNoTap, "interface:%q tap:%q", conf.Iface, tap)
 		}
@@ -82,7 +82,7 @@ func (s *Server) callUp(peer *govpn.Peer, proto govpn.Protocol) (*govpn.TAP, err
 		s.logger.WithFields(fields).Debug("Got interface, no Up")
 		return tap, nil
 	}
-	s.logger.WithFields(fields).Debug("Got interface, execute Up")
+	s.logger.WithFields(fields).Debug("Got interface, executing Up")
 
 	err = conf.Up(govpn.PeerContext{
 		RemoteAddress: peer.Addr,
@@ -102,14 +102,14 @@ func (s *Server) callDown(ps *PeerState) error {
 
 	conf := s.confs.Get(*ps.peer.ID)
 	if conf == nil {
-		s.logger.WithFields(fields).Error("Couldn't get configuration")
+		s.logger.WithFields(fields).Error("Can not get configuration")
 		return nil
 	}
 	if conf.Down == nil {
-		s.logger.WithFields(fields).Debug("No Down, skip")
+		s.logger.WithFields(fields).Debug("No Down, skipping")
 		return nil
 	}
-	s.logger.WithFields(fields).Debug("Execute Down")
+	s.logger.WithFields(fields).Debug("Executing Down")
 	err := conf.Down(govpn.PeerContext{
 		RemoteAddress: ps.peer.Addr,
 		Config:        *conf,

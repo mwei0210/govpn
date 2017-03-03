@@ -63,7 +63,7 @@ func TapListenFileDescriptor(fd uintptr, ifaceName string, mtu int) *TAP {
 					"func", logFuncPrefix + "TUN read sink loop",
 					"name": tap.Name,
 					"mtu":  mtu,
-				}).Error("Can't read interface, stop")
+				}).Error("Can not read interface, stop")
 				return
 				// TODO: need a way to warn consumer that something is wrong
 				// TODO: to force peer to just disconnect

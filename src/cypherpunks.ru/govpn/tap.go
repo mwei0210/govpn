@@ -74,7 +74,7 @@ func NewTAP(ifaceName string, mtu int) (*TAP, error) {
 					"func": logFuncPrefix + "TAP read sink loop",
 					"name": tap.Name,
 					"mtu":  mtu,
-				}).Error("Can't read interface")
+				}).Error("Can not read interface")
 				return
 				// TODO: need a way to warn consumer that something is wrong
 				// TODO: to force peer to just disconnect

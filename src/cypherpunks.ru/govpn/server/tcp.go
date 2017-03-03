@@ -102,7 +102,7 @@ func (s *Server) handleTCP(conn net.Conn) {
 				s.LogFields(),
 			).WithError(
 				err,
-			).Debug("Can't read connection: either EOFed or timeouted")
+			).Debug("Can not read connection: either EOFed or timeouted")
 			break
 		}
 		prev += n
@@ -112,11 +112,15 @@ func (s *Server) handleTCP(conn net.Conn) {
 				fields,
 			).WithFields(
 				s.LogFields(),
-			).WithError(err).Debug("Couldn't lookup for peer in ids")
+			).WithError(err).Debug("Can not lookup for peer in ids")
 			continue
 		}
 		if peerID == nil {
-			s.logger.WithFields(fields).WithFields(s.LogFields()).Debug("Couldn't find peer")
+			s.logger.WithFields(
+				fields,
+			).WithFields(
+				s.LogFields(),
+			).Debug("Can not find peer")
 			continue
 		}
 		if hs == nil {
@@ -139,7 +143,7 @@ func (s *Server) handleTCP(conn net.Conn) {
 				fields,
 			).WithError(err).WithFields(
 				s.LogFields(),
-			).Error("Can't create new peer")
+			).Error("Can not create new peer")
 			continue
 		}
 		prev = 0
@@ -253,7 +257,7 @@ func (s *Server) handleTCP(conn net.Conn) {
 				s.LogFields(),
 			).WithError(
 				err,
-			).Debug("Can't read connection: either EOFed or timeouted")
+			).Debug("Can not read connection: either EOFed or timeouted")
 			break
 		}
 		prev += n

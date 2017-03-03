@@ -91,7 +91,7 @@ func (p *Protocol) UnmarshalJSON(encoded []byte) error {
 	if err := json.Unmarshal(encoded, &str); err != nil {
 		return errors.Wrapf(
 			err,
-			"Can't unmarshall to string %q",
+			"Can not unmarshall to string %q",
 			hex.EncodeToString(encoded),
 		)
 	}
@@ -166,7 +166,7 @@ func CatchSignalShutdown() chan interface{} {
 		logger.WithFields(logrus.Fields{
 			"func":   logFuncPrefix + "CatchSignalShutdown",
 			"signal": sig.String(),
-		}).Debug("Catch signal, shutting down")
+		}).Debug("Catched signal, shutting down")
 		shutdownChan <- sig
 	}()
 	return shutdownChan
@@ -181,6 +181,6 @@ func SetLogger(l *logrus.Logger) {
 // CloseLog log an error if a io.Closer fail to Close
 func CloseLog(c io.Closer, l *logrus.Logger, fields logrus.Fields) {
 	if err := c.Close(); err != nil {
-		logrus.WithFields(fields).WithError(err).Error("Can't close connection")
+		logrus.WithFields(fields).WithError(err).Error("Can not close connection")
 	}
 }

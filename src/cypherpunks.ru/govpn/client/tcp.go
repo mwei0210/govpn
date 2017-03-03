@@ -37,7 +37,7 @@ func (c *Client) startTCP() {
 	l := c.logger.WithField("func", logFuncPrefix+"Client.startTCP")
 	// initialize using a file descriptor
 	if c.config.FileDescriptor > 0 {
-		l.WithField("fd", c.config.FileDescriptor).Debug("Connect using file descriptor")
+		l.WithField("fd", c.config.FileDescriptor).Debug("Connecting using file descriptor")
 		var err error
 		conn, err = net.FileConn(os.NewFile(
 			uintptr(c.config.FileDescriptor),
@@ -49,7 +49,7 @@ func (c *Client) startTCP() {
 		}
 	} else {
 		// TODO move resolution into the loop, as the name might change over time
-		l.WithField("fd", c.config.RemoteAddress).Debug("Connect using TCP")
+		l.WithField("fd", c.config.RemoteAddress).Debug("Connecting using TCP")
 		remote, err := net.ResolveTCPAddr("tcp", c.config.RemoteAddress)
 		if err != nil {
 			c.Error <- errors.Wrapf(err, "net.ResolveTCPAdd %s", c.config.RemoteAddress)
@@ -119,7 +119,7 @@ HandshakeCycle:
 				fields,
 			).WithFields(
 				c.LogFields(),
-			).WithError(err).Debug("Can't find peer in ids")
+			).WithError(err).Debug("Can not find peer in ids")
 			continue
 		}
 		peer, err = hs.Client(buf[:prev])
@@ -131,7 +131,7 @@ HandshakeCycle:
 				err,
 			).WithFields(
 				c.LogFields(),
-			).Debug("Can't create new peer")
+			).Debug("Can not create new peer")
 			continue
 		}
 		c.logger.WithFields(fields).WithFields(c.LogFields()).Info("Handshake completed")
@@ -165,9 +165,7 @@ TransportCycle:
 		default:
 		}
 		if prev == len(buf) {
-			c.logger.WithFields(
-				c.LogFields(),
-			).Debug("Packet timeouted")
+			c.logger.WithFields(c.LogFields()).Debug("Packet timeouted")
 			c.timeouted <- struct{}{}
 			break TransportCycle
 		}

@@ -372,7 +372,7 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 		).WithField(
 			"minimum_packet_Length",
 			MinPktLength,
-		).Debug("Ignore packet smaller than allowed minimum")
+		).Debug("Ignoring packet smaller than allowed minimum")
 		return false
 	}
 	if !p.Encless && len(data) > len(p.bufR)-CC20IBS {
@@ -471,7 +471,7 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 	}
 	p.BytesPayloadIn += uint64(p.pktSizeR)
 	if _, err = tap.Write(out[:p.pktSizeR]); err != nil {
-		logger.WithFields(p.LogFields()).WithFields(fields).WithError(err).Error("Can't write to TAP")
+		logger.WithFields(p.LogFields()).WithFields(fields).WithError(err).Error("Can not write to TAP")
 	}
 	return true
 }
@@ -502,7 +502,7 @@ func PeerTapProcessor(peer *Peer, tap *TAP, terminator chan struct{}) {
 						).WithFields(
 							peer.LogFields(),
 						).WithError(err).Warn(
-							"Can't process nil ethernet packet",
+							"Can not process nil Ethernet packet",
 						)
 					}
 					lastSent = now
@@ -513,7 +513,7 @@ func PeerTapProcessor(peer *Peer, tap *TAP, terminator chan struct{}) {
 						fields,
 					).WithFields(
 						peer.LogFields(),
-					).WithError(err).Warn("Can't process ethernet packet")
+					).WithError(err).Warn("Can not process Ethernet packet")
 				}
 				lastSent = time.Now()
 			}
@@ -531,7 +531,7 @@ func PeerTapProcessor(peer *Peer, tap *TAP, terminator chan struct{}) {
 						fields,
 					).WithFields(
 						peer.LogFields(),
-					).WithError(err).Warn("Can't process ethernet packet")
+					).WithError(err).Warn("Can not process Ethernet packet")
 				}
 			default:
 			}
@@ -541,7 +541,7 @@ func PeerTapProcessor(peer *Peer, tap *TAP, terminator chan struct{}) {
 						fields,
 					).WithFields(
 						peer.LogFields(),
-					).WithError(err).Warn("Can't process nil ethernet packet")
+					).WithError(err).Warn("Can not process nil Ethernet packet")
 				}
 			}
 			time.Sleep(peer.CPRCycle)

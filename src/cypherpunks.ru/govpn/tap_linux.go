@@ -31,7 +31,7 @@ func newTAPer(ifaceName *string) (io.ReadWriteCloser, error) {
 	config := water.Config{}
 
 	if len(*ifaceName) == 0 {
-		return nil, errors.New("Can't figure interface type, empty name")
+		return nil, errors.New("Can not figure interface type, empty name")
 	}
 
 	if strings.HasPrefix(*ifaceName, interfaceTap) {

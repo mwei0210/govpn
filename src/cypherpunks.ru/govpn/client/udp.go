@@ -32,7 +32,7 @@ func (c *Client) startUDP() {
 	l := c.logger.WithField("func", "startUDP")
 
 	// TODO move resolution into the loop, as the name might change over time
-	l.Debug("Resolve UDP address")
+	l.Debug("Resolving UDP address")
 	remote, err := net.ResolveUDPAddr("udp", c.config.RemoteAddress)
 	if err != nil {
 		c.Error <- errors.Wrapf(err, "net.ResolveUDPAddr %s", c.config.RemoteAddress)
@@ -46,14 +46,14 @@ func (c *Client) startUDP() {
 	}
 	l.WithFields(c.config.LogFields()).Info("Connected")
 
-	l.Debug("Handshake start")
+	l.Debug("Handshake starting")
 	hs, err := govpn.HandshakeStart(c.config.RemoteAddress, conn, c.config.Peer)
 	if err != nil {
 		govpn.CloseLog(conn, c.logger, c.LogFields())
 		c.Error <- errors.Wrap(err, "govpn.HandshakeStart")
 		return
 	}
-	l.Debug("Handshake done")
+	l.Debug("Handshake completed")
 
 	buf := make([]byte, c.config.Peer.MTU*2)
 	var n int
@@ -85,12 +85,12 @@ MainCycle:
 			break
 		}
 		if err != nil {
-			l.WithError(err).WithFields(c.LogFields()).Debug("Can't read from connection")
+			l.WithError(err).WithFields(c.LogFields()).Debug("Can not read from connection")
 			timeouts++
 			continue
 		}
 		if peer != nil {
-			c.logger.WithFields(c.LogFields()).Debug("No peer yet, process packet")
+			c.logger.WithFields(c.LogFields()).Debug("No peer yet, processing packet")
 			if peer.PktProcess(buf[:n], c.tap, true) {
 				l.WithFields(c.LogFields()).Debug("Packet processed")
 				timeouts = 0

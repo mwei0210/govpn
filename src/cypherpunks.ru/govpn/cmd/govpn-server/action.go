@@ -46,7 +46,7 @@ func preUpAction(path string) govpn.TunnelPreUpAction {
 		}
 
 		if len(ctx.Config.Iface) == 0 {
-			return nil, errors.Errorf("Script %q didn't returned an interface name", path)
+			return nil, errors.Errorf("Script %q didn't return interface name", path)
 		}
 
 		tap, err := govpn.TAPListen(ctx.Config.Iface, ctx.Config.MTU)
