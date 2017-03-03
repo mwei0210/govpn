@@ -121,11 +121,9 @@ func (p *Protocol) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 // NewProtocolFromString converts a string into a govpn.Protocol
 func NewProtocolFromString(p string) (Protocol, error) {
-	var (
-		k Protocol
-		v string
-		lowP = strings.ToLower(p)
-	)
+	var k Protocol
+	var v string
+	lowP := strings.ToLower(p)
 	for k, v = range protocolText {
 		if strings.ToLower(v) == lowP {
 			return k, nil
