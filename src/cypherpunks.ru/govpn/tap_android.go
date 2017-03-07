@@ -53,6 +53,10 @@ func TapListenFileDescriptor(fd uintptr, ifaceName string, mtu int) *TAP {
 			bufZ = !bufZ
 			n, err = tap.dev.Read(buf)
 			if err != nil {
+				if tap.closed {
+					return
+				}
+
 				e, ok := err.(*os.PathError)
 				if ok && e.Err == syscall.EAGAIN {
 					time.Sleep(time.Millisecond * 20)

@@ -36,6 +36,7 @@ type TAP struct {
 	Name string
 	Sink chan []byte
 	dev  io.ReadWriteCloser
+	closed bool
 }
 
 var (
@@ -70,6 +71,9 @@ func NewTAP(ifaceName string, mtu int) (*TAP, error) {
 			bufZ = !bufZ
 			n, err = tap.dev.Read(buf)
 			if err != nil {
+				if tap.closed {
+					return
+				}
 				logger.WithError(err).WithFields(logrus.Fields{
 					"func": logFuncPrefix + "TAP read sink loop",
 					"name": tap.Name,
@@ -93,8 +97,15 @@ func (t *TAP) Write(data []byte) (int, error) {
 
 // Close close TAP/TUN virtual network interface
 func (t *TAP) Close() error {
-	// TODO add chan to stop read loop
-	return t.dev.Close()
+	if t.closed {
+		return nil
+	}
+	err := t.dev.Close()
+	if err != nil {
+		return errors.Wrap(err, "water.Interface.Close")
+	}
+	t.closed = true
+	return nil
 }
 
 // TAPListen opens an existing TAP (creates if none exists)
