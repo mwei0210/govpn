@@ -90,7 +90,7 @@ MainCycle:
 			continue
 		}
 		if peer != nil {
-			c.logger.WithFields(c.LogFields()).Debug("No peer yet, processing packet")
+			c.logger.WithFields(c.LogFields()).Debug("Processing packet")
 			if peer.PktProcess(buf[:n], c.tap, true) {
 				l.WithFields(c.LogFields()).Debug("Packet processed")
 				timeouts = 0
