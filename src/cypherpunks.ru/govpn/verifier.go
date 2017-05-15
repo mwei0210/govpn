@@ -67,16 +67,16 @@ func VerifierNew(s, t, p int, id *PeerID) *Verifier {
 func (v *Verifier) PasswordApply(password string) (*[ed25519.PrivateKeySize]byte, error) {
 	// TODO: there is an extremely weird bug, "balloon.H" panic if I the `hash.Hash`
 	// outside the "hasher" function.
-	var err error
 	hasher := func() hash.Hash {
-		var nilHash hash.Hash
-		nilHash, err = blake2b.New256(nil)
+		nilHash, err := blake2b.New256(nil)
+		// blake2b.New256 can't return an error if key is nil so if following should never executes
+		// if it does happen, blake2b.New256 implementation changes, and this code should be updated.
+		if err != nil {
+			panic(err)
+		}
 		return nilHash
 	}
 	r := balloon.H(hasher, []byte(password), v.ID[:], v.S, v.T, v.P)
-	if err != nil {
-		return nil, errors.Wrap(err, wrapBlake2bNew256)
-	}
 
 	defer SliceZero(r)
 	src := bytes.NewBuffer(r)
