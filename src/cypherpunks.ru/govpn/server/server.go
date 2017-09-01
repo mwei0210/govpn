@@ -220,10 +220,11 @@ MainCycle:
 			s.kpLock.Lock()
 			for addr, ps := range s.peers {
 				ps.peer.BusyR.Lock()
-				needsDeletion = ps.peer.LastPing.Add(
+				if ps.peer.LastPing.Add(
 					s.configuration.Timeout,
-				).Before(now)
-				ps.peer.BusyR.Unlock()
+				).Before(now) || ps.peer.IsMarkedForDeletion() {
+					needsDeletion = true
+				}
 				if needsDeletion {
 					logrus.WithFields(
 						fields,

@@ -249,6 +249,7 @@ func (s *Server) startUDP() {
 			addrPrev, exists = s.peersByID[*peer.ID]
 			s.peersByIDLock.RUnlock()
 
+			var peerPrev *PeerState
 			if exists {
 				s.logger.WithFields(
 					fields,
@@ -256,10 +257,19 @@ func (s *Server) startUDP() {
 					loopFields,
 				).Debug("Peer already exists")
 				s.peersLock.Lock()
-				s.peers[addrPrev].terminator <- struct{}{}
+
+				peerPrev = s.peers[addrPrev]
+				if peerPrev == nil {
+					exists = false
+					s.peersLock.Unlock()
+				}
+			}
+
+			if exists {
+				peerPrev.terminator <- struct{}{}
 				psNew := &PeerState{
 					peer:       peer,
-					tap:        s.peers[addrPrev].tap,
+					tap:        peerPrev.tap,
 					terminator: make(chan struct{}),
 				}
 				peer.Protocol = govpn.ProtocolUDP

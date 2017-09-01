@@ -137,6 +137,16 @@ type Peer struct {
 	nonceT   *[16]byte
 	frameT   []byte
 	noncesT  chan *[NonceSize]byte
+
+	markDeletion bool
+}
+
+func (p *Peer) MarkDeletion() {
+	p.markDeletion = true
+}
+
+func (p *Peer) IsMarkedForDeletion() bool {
+	return p.markDeletion
 }
 
 // LogFields returns a logrus compatible Fields to identity a single

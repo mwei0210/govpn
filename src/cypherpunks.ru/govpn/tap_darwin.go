@@ -34,5 +34,6 @@ func newTAPer(ifaceName *string) (io.ReadWriteCloser, error) {
 		return nil, errors.Errorf("Darwin does not allow to set an interface name, only %q is supported", *ifaceName)
 	}
 	output, err := water.New(water.Config{DeviceType: water.TUN})
+	*ifaceName = output.Name()
 	return output, errors.Wrap(err, "water.New")
 }
