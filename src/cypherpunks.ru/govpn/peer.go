@@ -20,6 +20,7 @@ package govpn
 
 import (
 	"bytes"
+	"chacha20"
 	"crypto/subtle"
 	"encoding/binary"
 	"io"
@@ -27,7 +28,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"chacha20"
 	"github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/blake2b"
@@ -137,16 +137,6 @@ type Peer struct {
 	nonceT   *[16]byte
 	frameT   []byte
 	noncesT  chan *[NonceSize]byte
-
-	markDeletion bool
-}
-
-func (p *Peer) MarkDeletion() {
-	p.markDeletion = true
-}
-
-func (p *Peer) IsMarkedForDeletion() bool {
-	return p.markDeletion
 }
 
 // LogFields returns a logrus compatible Fields to identity a single
