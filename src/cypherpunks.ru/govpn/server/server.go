@@ -225,6 +225,7 @@ MainCycle:
 				).Before(now) || ps.peer.IsMarkedForDeletion() {
 					needsDeletion = true
 				}
+				ps.peer.BusyR.Unlock()
 				if needsDeletion {
 					logrus.WithFields(
 						fields,
