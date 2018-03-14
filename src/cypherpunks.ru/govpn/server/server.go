@@ -222,9 +222,10 @@ MainCycle:
 				ps.peer.BusyR.Lock()
 				if ps.peer.LastPing.Add(
 					s.configuration.Timeout,
-				).Before(now) || ps.peer.IsMarkedForDeletion() {
+				).Before(now) {
 					needsDeletion = true
 				}
+				ps.peer.BusyR.Unlock()
 				if needsDeletion {
 					logrus.WithFields(
 						fields,
