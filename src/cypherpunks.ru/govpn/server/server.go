@@ -220,9 +220,27 @@ MainCycle:
 			s.kpLock.Lock()
 			for addr, ps := range s.peers {
 				ps.peer.BusyR.Lock()
+				logrus.WithFields(
+					fields,
+				).WithFields(
+					ps.peer.LogFields(),
+				).Debug("Checking peer")
 				if ps.peer.LastPing.Add(
 					s.configuration.Timeout,
 				).Before(now) {
+					logrus.WithFields(
+						fields,
+					).WithFields(
+						ps.peer.LogFields(),
+					).WithField("now", now.String()).Info("Peer timedout")
+					needsDeletion = true
+				}
+				if ps.peer.IsMarkedForDeletion() {
+					logrus.WithFields(
+						fields,
+					).WithFields(
+						ps.peer.LogFields(),
+					).Info("Peer is marked as deletion")
 					needsDeletion = true
 				}
 				ps.peer.BusyR.Unlock()
@@ -250,6 +268,7 @@ MainCycle:
 						).Error("Can not close TAP")
 					}
 					ps.terminator <- struct{}{}
+					needsDeletion = false
 				}
 			}
 			s.hsLock.Unlock()

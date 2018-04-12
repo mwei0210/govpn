@@ -103,6 +103,9 @@ func (s *Server) startUDP() {
 				).WithFields(
 					loopFields,
 				).Debug("Already known peer, PktProcess")
+				// peer can be mark to delete, but haven't deleted and user reconnect
+				// reuse peer in this case
+				ps.peer.UnmarkDeletion()
 				go func(peer *govpn.Peer, tap *govpn.TAP, buf []byte, n int) {
 					peer.PktProcess(buf[:n], tap, true)
 					udpBufs <- buf
