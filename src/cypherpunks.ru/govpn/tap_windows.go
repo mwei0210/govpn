@@ -31,7 +31,7 @@ func newTAPer(ifaceName *string) (io.ReadWriteCloser, error) {
 		return nil, errors.Wrap(errUnsupportedInterface, *ifaceName)
 	}
 	config := water.Config{}
-	config.DeviceType = water.TUN
+	config.DeviceType = water.TAP
 	config.PlatformSpecificParams.ComponentID = *ifaceName
 	config.PlatformSpecificParams.Network = "192.168.1.10/24" // TODO: Bruno figure how to fix that
 	output, err := water.New(config)
