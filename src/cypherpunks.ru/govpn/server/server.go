@@ -47,6 +47,14 @@ type PeerState struct {
 	tap        *govpn.TAP
 }
 
+func (ps *PeerState) LogFields() logrus.Fields {
+	fields := ps.peer.LogFields()
+	for k, v := range ps.tap.LogFields() {
+		fields[k] = v
+	}
+	return fields
+}
+
 // Configuration hold GoVPN server configuration
 type Configuration struct {
 	BindAddress  string

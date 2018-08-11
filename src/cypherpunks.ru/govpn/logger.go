@@ -1,5 +1,3 @@
-// +build !windows
-
 /*
 GoVPN -- simple secure free software virtual private network daemon
 Copyright (C) 2014-2017 Sergey Matveev <stargrave@stargrave.org>
@@ -21,83 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 package govpn
 
-import (
-	"bytes"
-	"fmt"
-	logsyslog "log/syslog"
-	"os"
-	"sort"
-	"time"
-
-	"github.com/Sirupsen/logrus"
-	"github.com/Sirupsen/logrus/hooks/syslog"
-	"github.com/pkg/errors"
-)
-
-// syslogFormatter is a syslog friendly formatter
-type syslogFormatter struct{}
-
-// Format converts a log entry into a list of bytes
-func (sf *syslogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	var buf bytes.Buffer
-	var err error
-	keys := make([]string, 0, len(entry.Data))
-	for k := range entry.Data {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	for _, k := range keys {
-		if _, err = buf.WriteString(fmt.Sprintf("[%s]%+v ", k, entry.Data[k])); err != nil {
-			return nil, errors.Wrapf(err, "buf.WriteString %s", k)
-		}
-	}
-	if _, err = buf.WriteString(entry.Message); err != nil {
-		return nil, errors.Wrap(err, "buf.WriteString message")
-	}
-	return buf.Bytes(), nil
-}
-
-// NewLogger returns a logger for specified level. Syslog or Windows
-// Events can be turned on.
-func NewLogger(level string, syslog bool) (*logrus.Logger, error) {
-	var logger *logrus.Logger
-	logLevel, err := logrus.ParseLevel(level)
-	if err != nil {
-		return nil, errors.Wrap(err, "logrus.ParseLevel")
-	}
-
-	if syslog {
-		syslogHook, err := logrus_syslog.NewSyslogHook("", "", logsyslog.LOG_INFO, "GoVPN")
-		if err != nil {
-			return nil, errors.Wrap(err, "logrus_syslog.NewSyslogHook")
-		}
-		logger = &logrus.Logger{
-			Formatter: &syslogFormatter{},
-			Hooks:     make(logrus.LevelHooks),
-		}
-		logger.Hooks.Add(syslogHook)
-	} else {
-		logger = &logrus.Logger{
-			Formatter: &logrus.TextFormatter{
-				ForceColors:      true,
-				DisableColors:    false,
-				DisableTimestamp: false,
-				FullTimestamp:    true,
-				TimestampFormat:  time.RFC3339Nano,
-				DisableSorting:   false,
-			},
-			Hooks: make(logrus.LevelHooks),
-		}
-	}
-	logger.Out = os.Stderr
-	logger.Level = logLevel
-	logger.WithFields(logrus.Fields{
-		"version": VersionGet(),
-		"level":   logLevel.String(),
-	}).Info("Initialize logging")
-	return logger, nil
-}
+import "github.com/Sirupsen/logrus"
 
 // ExtendLogFields adds batch of log Fields to existing fields ones
 func ExtendLogFields(input *logrus.Fields, add logrus.Fields) {

@@ -21,10 +21,12 @@ package govpn
 import (
 	"crypto/subtle"
 	"encoding/binary"
+	"encoding/hex"
 	"io"
 	"time"
 
 	"chacha20"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/agl/ed25519"
 	"github.com/agl/ed25519/extra25519"
@@ -323,7 +325,7 @@ func (h *Handshake) Server(data []byte) (*Peer, error) {
 			)
 		}
 		if subtle.ConstantTimeCompare(dec[:RSize], h.rServer[:]) != 1 {
-			return nil, errors.New("Invalid server's random number")
+			return nil, errors.Errorf("Invalid server's random number %q expected %q", hex.EncodeToString(dec[:RSize][:]), hex.EncodeToString(h.rServer[:]))
 		}
 		sign := new([ed25519.SignatureSize]byte)
 		copy(sign[:], dec[RSize+RSize+SSize:])

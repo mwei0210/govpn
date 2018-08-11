@@ -48,17 +48,12 @@ func (s *Server) startUDP() {
 		return
 	}
 
-	fields := logrus.Fields{
+	logger := s.logger.WithFields(s.configuration.LogFields()).WithFields(logrus.Fields{
 		"func": logFuncPrefix + "Server.startUDP",
 		"bind": bind.String(),
-	}
-	s.logger.WithFields(
-		fields,
-	).WithFields(
-		s.LogFields(),
-	).WithFields(
-		s.configuration.LogFields(),
-	).Info("Listen")
+	})
+
+	logger.WithFields(s.LogFields()).Info("Listen")
 
 	udpBufs := make(chan []byte, 1<<8)
 	udpBufs <- make([]byte, govpn.MTUMax)
@@ -75,34 +70,22 @@ func (s *Server) startUDP() {
 		var peerID *govpn.PeerID
 		var conf *govpn.PeerConf
 		for {
-			s.logger.WithFields(fields).Debug("Waiting for UDP buffer")
+			logger.Debug("Waiting for UDP buffer")
 			buf = <-udpBufs
 			n, raddr, err = conn.ReadFromUDP(buf)
 			if err != nil {
-				s.logger.WithFields(
-					fields,
-				).WithFields(
-					s.LogFields(),
-				).WithError(err).Debug("Receive failed")
+				logger.WithFields(s.LogFields()).WithError(err).Debug("Receive failed")
 				break
 			}
 			addr = raddr.String()
-			loopFields := logrus.Fields{"addr": addr}
+			loggerLoop := logger.WithField("addr", addr)
 
-			s.logger.WithFields(
-				fields,
-			).WithFields(
-				loopFields,
-			).Debug("Got UDP buffer, checking if peer exists")
+			loggerLoop.Debug("Got UDP buffer, checking if peer exists")
 			s.peersLock.RLock()
 			ps, exists = s.peers[addr]
 			s.peersLock.RUnlock()
 			if exists {
-				s.logger.WithFields(
-					fields,
-				).WithFields(
-					loopFields,
-				).Debug("Already known peer, PktProcess")
+				loggerLoop.WithFields(ps.LogFields()).Debug("Already known peer, PktProcess")
 				// peer can be mark to delete, but haven't deleted and user reconnect
 				// reuse peer in this case
 				ps.peer.UnmarkDeletion()
@@ -113,62 +96,35 @@ func (s *Server) startUDP() {
 				continue
 			}
 
-			logrus.WithFields(fields).WithFields(loopFields).Debug("New peer")
+			loggerLoop.Debug("New peer")
 			s.hsLock.RLock()
 			hs, exists = s.handshakes[addr]
 			s.hsLock.RUnlock()
 			if !exists {
-				logrus.WithFields(
-					fields,
-				).WithFields(
-					loopFields,
-				).Debug("No handshake yet, trying to figure peer ID")
+				loggerLoop.Debug("No handshake yet, trying to figure peer ID")
 				peerID, err = s.idsCache.Find(buf[:n])
 				if err != nil {
-					s.logger.WithFields(
-						fields,
-					).WithFields(
-						loopFields,
-					).WithFields(
-						s.LogFields(),
-					).WithError(err).Debug("Can not lookup for peer in ids")
+					loggerLoop.WithFields(s.LogFields()).WithError(err).Debug("Can not lookup for peer in ids")
 					udpBufs <- buf
 					continue
 				}
 				if peerID == nil {
-					s.logger.WithFields(
-						fields,
-					).WithFields(
-						loopFields,
-					).WithFields(
-						s.LogFields(),
-					).Debug("Identity unknown")
+					loggerLoop.WithFields(s.LogFields()).Debug("Identity unknown")
 					udpBufs <- buf
 					continue
 				}
 
-				loopFields["peer_id"] = peerID.String()
-				s.logger.WithFields(fields).WithFields(loopFields).Debug("Peer ID found")
+				loggerLoop = loggerLoop.WithField("peer_id", peerID.String())
+				loggerLoop.Debug("Peer ID found")
 				conf = s.confs.Get(*peerID)
 				if conf == nil {
-					s.logger.WithFields(
-						loopFields,
-					).WithFields(
-						fields,
-					).WithFields(
-						s.LogFields(),
-					).WithFields(
-						s.configuration.LogFields(),
-					).Error("Peer try to connect, but not configured")
+					loggerLoop.WithFields(s.configuration.LogFields()).Error("Peer try to connect, but not configured")
 					udpBufs <- buf
 					continue
 				}
 
-				s.logger.WithFields(
-					loopFields,
-				).WithFields(
-					fields,
-				).Debug("Got configuration, performing handshake")
+				loggerLoop = loggerLoop.WithFields(conf.LogFields(""))
+				loggerLoop.Debug("Got configuration, performing handshake")
 				hs = govpn.NewHandshake(
 					addr,
 					udpSender{conn: conn, addr: raddr},
@@ -177,22 +133,10 @@ func (s *Server) startUDP() {
 				_, err := hs.Server(buf[:n])
 				udpBufs <- buf
 				if err != nil {
-					s.logger.WithFields(
-						loopFields,
-					).WithFields(
-						fields,
-					).WithError(err).WithFields(
-						s.LogFields(),
-					).Error("Can not create new peer: handshake failed")
+					loggerLoop.WithError(err).WithFields(s.LogFields()).Error("Can not create new peer: handshake failed")
 					continue
 				}
-				s.logger.WithFields(
-					loopFields,
-				).WithFields(
-					fields,
-				).WithFields(
-					s.LogFields(),
-				).Info("Hashshake started, continuing for the next packet")
+				loggerLoop.WithFields(s.LogFields()).Info("Hashshake started, continuing for the next packet")
 
 				s.hsLock.Lock()
 				s.handshakes[addr] = hs
@@ -200,44 +144,21 @@ func (s *Server) startUDP() {
 				continue
 			}
 
-			logrus.WithFields(
-				fields,
-			).WithFields(
-				loopFields,
-			).Debug("Already got handshake, finishing it")
+			loggerLoop.Debug("Already got handshake, finishing it")
 			peer, err := hs.Server(buf[:n])
 			if err != nil {
-				s.logger.WithFields(
-					fields,
-				).WithFields(
-					loopFields,
-				).WithError(err).WithFields(
-					s.LogFields(),
-				).Error("Can not create new peer: handshake failed")
+				loggerLoop.WithError(err).WithFields(s.LogFields()).Error("Can not create new peer: handshake failed")
 				udpBufs <- buf
 				continue
 			}
 			if peer == nil {
-				s.logger.WithFields(
-					fields,
-				).WithFields(
-					loopFields,
-				).WithFields(
-					s.LogFields(),
-				).Error("Can not continue handshake")
+				loggerLoop.WithFields(s.LogFields()).Error("Can not continue handshake")
 				udpBufs <- buf
 				continue
 			}
 
-			s.logger.WithFields(
-				fields,
-			).WithFields(
-				s.LogFields(),
-			).WithFields(
-				loopFields,
-			).WithFields(
-				peer.LogFields(),
-			).Info("Handshake completed")
+			loggerLoop = loggerLoop.WithFields(peer.LogFields()).WithFields(peer.ConfigurationLogFields())
+			loggerLoop.WithFields(s.LogFields()).Info("Handshake completed")
 
 			hs.Zero()
 			s.hsLock.Lock()
@@ -254,11 +175,7 @@ func (s *Server) startUDP() {
 
 			var peerPrev *PeerState
 			if exists {
-				s.logger.WithFields(
-					fields,
-				).WithFields(
-					loopFields,
-				).Debug("Peer already exists")
+				loggerLoop.Debug("Peer already exists")
 				s.peersLock.Lock()
 
 				peerPrev = s.peers[addrPrev]
@@ -294,33 +211,13 @@ func (s *Server) startUDP() {
 				s.peersByIDLock.Unlock()
 				s.kpLock.Unlock()
 
-				s.logger.WithFields(
-					fields,
-				).WithFields(
-					loopFields,
-				).WithFields(
-					s.LogFields(),
-				).WithFields(
-					peer.LogFields(),
-				).Debug("Rehandshake completed")
+				loggerLoop.WithFields(s.LogFields()).Debug("Rehandshake completed")
 			} else {
 				go func(addr string, peer *govpn.Peer) {
-					s.logger.WithFields(
-						fields,
-					).WithFields(
-						loopFields,
-					).Debug("Peer does not exist")
+					loggerLoop.Debug("Peer does not exist")
 					tap, err := s.callUp(peer, govpn.ProtocolUDP)
 					if err != nil {
-						s.logger.WithFields(
-							loopFields,
-						).WithFields(
-							fields,
-						).WithFields(
-							s.LogFields(),
-						).WithFields(
-							peer.LogFields(),
-						).WithError(err).Error("TAP failed")
+						loggerLoop.WithFields(s.LogFields()).WithError(err).Error("TAP failed")
 						return
 					}
 					psNew := &PeerState{
@@ -343,15 +240,7 @@ func (s *Server) startUDP() {
 					s.peersLock.Unlock()
 					s.peersByIDLock.Unlock()
 					s.kpLock.Unlock()
-					s.logger.WithFields(
-						loopFields,
-					).WithFields(
-						fields,
-					).WithFields(
-						s.LogFields(),
-					).WithFields(
-						peer.LogFields(),
-					).Info("Peer initialized")
+					loggerLoop.WithFields(s.LogFields()).Info("Peer initialized")
 				}(addr, peer)
 			}
 			udpBufs <- buf

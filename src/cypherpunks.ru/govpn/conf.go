@@ -52,8 +52,9 @@ func (pc *PeerConf) LogFields(rootPrefix string) logrus.Fields {
 	output := logrus.Fields{
 		p + "peer_name": pc.Name,
 		p + "mtu":       pc.MTU,
+		p + "interface": pc.Iface,
 		p + "noise":     pc.Noise,
-		p + "pcr":       pc.CPR,
+		p + "cpr":       pc.CPR,
 		p + "encless":   pc.Encless,
 		p + "timesync":  pc.TimeSync,
 		p + "timeout":   pc.Timeout.String(),
