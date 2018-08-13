@@ -33,15 +33,16 @@ const (
 // TAP is a TUN or a TAP interface.
 // TODO: rename to something more... generic?
 type TAP struct {
-	Name string
-	Sink chan []byte
-	dev  io.ReadWriteCloser
+	Name   string
+	Sink   chan []byte
+	dev    io.ReadWriteCloser
 	closed bool
 }
 
 var (
 	taps                    = make(map[string]*TAP)
 	errUnsupportedInterface = errors.New("Unsupported interface")
+	logTapPrefix            = "tap_"
 )
 
 // NewTAP creates a new TUN/TAP virtual interface
@@ -120,4 +121,10 @@ func TAPListen(ifaceName string, mtu int) (*TAP, error) {
 	}
 	taps[ifaceName] = tap
 	return tap, nil
+}
+
+// LogFields returns a logrus compatible Fields to identity a single
+// tap in logs
+func (t *TAP) LogFields() logrus.Fields {
+	return logrus.Fields{logTapPrefix + "name": t.Name}
 }
