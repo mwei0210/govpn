@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 )
 
@@ -32,6 +33,13 @@ type PeerContext struct {
 	RemoteAddress string
 	Protocol      Protocol
 	Config        PeerConf
+}
+
+func (p *PeerContext) LogFields() (fields logrus.Fields) {
+	const prefix = "peercontext_"
+	fields = p.Config.LogFields(prefix)
+	fields[prefix+"_protocol"] = p.Protocol.String()
+	return fields
 }
 
 // TunnelAction is an action for either client or server that is
