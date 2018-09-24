@@ -488,6 +488,7 @@ func (p *Peer) PktProcess(data []byte, tap io.Writer, reorderable bool) bool {
 	p.BytesPayloadIn += uint64(p.pktSizeR)
 	if _, err = tap.Write(out[:p.pktSizeR]); err != nil {
 		logger.WithFields(p.LogFields()).WithFields(fields).WithError(err).Error("Can not write to TAP")
+		return false
 	}
 	return true
 }
