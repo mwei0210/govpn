@@ -40,6 +40,7 @@ func (s *Server) callUp(peer *govpn.Peer, proto govpn.Protocol) (*govpn.TAP, err
 		fields        = s.LogFields()
 	)
 	fields["func"] = logFuncPrefix + "Server.callUp"
+	fields["tunnel_interface"] = conf.Iface
 
 	if !isConfigIface && conf.PreUp == nil {
 		return nil, errors.Wrapf(
@@ -74,6 +75,7 @@ func (s *Server) callUp(peer *govpn.Peer, proto govpn.Protocol) (*govpn.TAP, err
 		if tap, err = govpn.TAPListen(conf.Iface, peer.MTU); err != nil {
 			return nil, errors.Wrap(err, "govpn.TAPListen")
 		}
+		s.logger.WithFields(fields).Debug("Interface created")
 	}
 
 	conf.Iface = tap.Name
@@ -102,7 +104,7 @@ func (s *Server) callDown(ps *PeerState) error {
 
 	conf := s.confs.Get(*ps.peer.ID)
 	if conf == nil {
-		s.logger.WithFields(fields).Error("Can not get configuration")
+		s.logger.WithFields(fields).Error("Cannot get configuration")
 		return nil
 	}
 	if conf.Down == nil {
@@ -115,6 +117,9 @@ func (s *Server) callDown(ps *PeerState) error {
 		Config:        *conf,
 		Protocol:      ps.peer.Protocol,
 	})
+	if err != nil {
+		fields["error"] = err.Error()
+	}
 	s.logger.WithFields(fields).Debug("Down executed")
 	return errors.Wrap(err, "peer.Down")
 }
