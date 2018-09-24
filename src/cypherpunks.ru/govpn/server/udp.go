@@ -90,7 +90,9 @@ func (s *Server) startUDP() {
 				// reuse peer in this case
 				ps.peer.UnmarkDeletion()
 				go func(peer *govpn.Peer, tap *govpn.TAP, buf []byte, n int) {
-					peer.PktProcess(buf[:n], tap, true)
+					if !peer.PktProcess(buf[:n], tap, true) {
+						s.Error <- errors.New("peer.PktProcess: failed to process packet")
+					}
 					udpBufs <- buf
 				}(ps.peer, ps.tap, buf, n)
 				continue
