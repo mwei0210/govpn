@@ -64,7 +64,7 @@ func TapListenFileDescriptor(fd uintptr, ifaceName string, mtu int) *TAP {
 				}
 
 				logger.WithError(err).WithFields(logrus.Fields{
-					"func", logFuncPrefix + "TUN read sink loop",
+					"func": logFuncPrefix + "TUN read sink loop",
 					"name": tap.Name,
 					"mtu":  mtu,
 				}).Error("Can not read interface, stop")
