@@ -29,8 +29,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/Sirupsen/logrus"
-	"github.com/Sirupsen/logrus/hooks/syslog"
+	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/syslog"
 	"github.com/pkg/errors"
 )
 

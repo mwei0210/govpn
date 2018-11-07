@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 package govpn
 
-import "github.com/Sirupsen/logrus"
+import "github.com/sirupsen/logrus"
 
 // ExtendLogFields adds batch of log Fields to existing fields ones
 func ExtendLogFields(input *logrus.Fields, add logrus.Fields) {

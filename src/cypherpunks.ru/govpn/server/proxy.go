@@ -21,7 +21,7 @@ package server
 import (
 	"net/http"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 type proxyHandler struct {

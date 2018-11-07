@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"cypherpunks.ru/govpn"
 	"cypherpunks.ru/govpn/client"

@@ -27,7 +27,7 @@ import (
 
 	"chacha20"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/agl/ed25519"
 	"github.com/agl/ed25519/extra25519"
 	"github.com/pkg/errors"

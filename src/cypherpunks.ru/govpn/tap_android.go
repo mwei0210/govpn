@@ -23,7 +23,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 func TapListenFileDescriptor(fd uintptr, ifaceName string, mtu int) *TAP {
