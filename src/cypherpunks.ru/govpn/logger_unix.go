@@ -29,9 +29,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/syslog"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	logrus_syslog "github.com/sirupsen/logrus/hooks/syslog"
 )
 
 // syslogFormatter is a syslog friendly formatter
